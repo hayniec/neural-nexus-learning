@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import './index.css';
 import QuizGame from './components/games/QuizGame';
 import SwipeGame from './components/games/SwipeGame';
@@ -26,6 +26,53 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeLevel, setActiveLevel] = useState<AnyGameData | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const speechRecRef = useRef<any>(null);
+
+  const toggleSpeechToText = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isRecording && speechRecRef.current) {
+      speechRecRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    speechRecRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (finalTranscript) {
+        setNotes(prev => prev + finalTranscript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      speechRecRef.current = null;
+    };
+
+    recognition.start();
+    setIsRecording(true);
+  }, [isRecording]);
 
   const readFileAsBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -201,11 +248,22 @@ function App() {
           </div>
 
           <div className="upload-area">
-            <textarea 
-              placeholder="[Optional] Paste highly specific study notes, facts, or instructions here if you want to strictly control the content..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            ></textarea>
+            <div className="textarea-with-mic">
+              <textarea 
+                placeholder="[Optional] Paste study notes, speak them aloud with the mic, or upload images to strictly control the content..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              ></textarea>
+              <button 
+                className={`btn-mic ${isRecording ? 'recording' : ''}`}
+                onClick={toggleSpeechToText}
+                title={isRecording ? 'Stop recording' : 'Start voice dictation'}
+                type="button"
+              >
+                {isRecording ? '⏹️' : '🎙️'}
+              </button>
+              {isRecording && <div className="recording-indicator">Listening...</div>}
+            </div>
 
             {imageFiles.length > 0 && (
               <div className="attached-files">
