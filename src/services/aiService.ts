@@ -131,10 +131,10 @@ export async function generateGame(
   level: string = 'High School'
 ): Promise<AnyGameData> {
   const provider = localStorage.getItem('ai_provider') || 'gemini';
-  const apiKey = localStorage.getItem('ai_api_key');
+  const apiKey = localStorage.getItem(`ai_key_${provider}`);
 
   if (!apiKey) {
-    throw new Error('No API key found. Please save your key in settings.');
+    throw new Error(`No API key found for ${provider}. Please save your key in settings.`);
   }
 
   const hasImage = images.length > 0;

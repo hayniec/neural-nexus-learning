@@ -16,20 +16,36 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const [provider, setProvider] = useState<Provider>('gemini');
-  const [apiKey, setApiKey] = useState('');
+  const [activeProvider, setActiveProvider] = useState<Provider>('gemini');
+  const [keys, setKeys] = useState<Record<Provider, string>>({
+    gemini: '', openai: '', claude: '', mistral: '', groq: ''
+  });
   const [saveStatus, setSaveStatus] = useState('');
 
   useEffect(() => {
     const savedProvider = localStorage.getItem('ai_provider') as Provider | null;
-    const savedKey = localStorage.getItem('ai_api_key');
-    if (savedProvider) setProvider(savedProvider);
-    if (savedKey) setApiKey(savedKey);
+    if (savedProvider) setActiveProvider(savedProvider);
+
+    const loadedKeys: Record<Provider, string> = { gemini: '', openai: '', claude: '', mistral: '', groq: '' };
+    for (const p of PROVIDERS) {
+      loadedKeys[p.id] = localStorage.getItem(`ai_key_${p.id}`) || '';
+    }
+    setKeys(loadedKeys);
   }, []);
 
+  const handleKeyChange = (provider: Provider, value: string) => {
+    setKeys(prev => ({ ...prev, [provider]: value }));
+  };
+
   const handleSave = () => {
-    localStorage.setItem('ai_provider', provider);
-    localStorage.setItem('ai_api_key', apiKey);
+    localStorage.setItem('ai_provider', activeProvider);
+    for (const p of PROVIDERS) {
+      if (keys[p.id]) {
+        localStorage.setItem(`ai_key_${p.id}`, keys[p.id]);
+      } else {
+        localStorage.removeItem(`ai_key_${p.id}`);
+      }
+    }
     setSaveStatus('Settings saved!');
     setTimeout(() => {
       setSaveStatus('');
@@ -37,7 +53,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }, 1500);
   };
 
-  const activeProvider = PROVIDERS.find(p => p.id === provider)!;
+  const configuredCount = PROVIDERS.filter(p => keys[p.id].trim() !== '').length;
 
   return (
     <div className="modal-overlay">
@@ -45,44 +61,56 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         <button className="btn-close" onClick={onClose}>×</button>
         <h2>AI Provider Settings</h2>
         <p className="modal-desc">
-          Choose your AI engine and paste your API key. Keys are stored locally in your browser and never leave your device.
+          Add API keys for any providers you want to use. Keys are stored locally in your browser and never leave your device.
+          <span className="configured-badge">{configuredCount}/{PROVIDERS.length} configured</span>
         </p>
-        
+
         <div className="form-group">
-          <label>Select AI Provider</label>
+          <label>Active Provider</label>
           <div className="provider-options">
             {PROVIDERS.map(p => (
-              <button 
+              <button
                 key={p.id}
-                className={`provider-btn ${provider === p.id ? 'active' : ''}`}
-                onClick={() => setProvider(p.id)}
+                className={`provider-btn ${activeProvider === p.id ? 'active' : ''} ${keys[p.id].trim() ? 'has-key' : ''}`}
+                onClick={() => setActiveProvider(p.id)}
               >
                 <span className="provider-name">{p.label}</span>
                 <span className="provider-desc">{p.description}</span>
+                {keys[p.id].trim() && <span className="provider-key-dot" title="API key configured">●</span>}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="form-group">
-          <label>{activeProvider.label} API Key</label>
-          <input 
-            type="password" 
-            placeholder={`Enter your ${activeProvider.label} API Key...`}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="api-input"
-          />
-          <div className="key-help">
-            <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer noopener">
-              Get a {activeProvider.label} API Key here ↗
-            </a>
+        <div className="provider-keys-section">
+          <label>API Keys</label>
+          <div className="provider-key-list">
+            {PROVIDERS.map(p => (
+              <div key={p.id} className={`provider-key-row ${activeProvider === p.id ? 'active-row' : ''}`}>
+                <div className="provider-key-header">
+                  <span className="provider-key-label">
+                    {keys[p.id].trim() ? '🟢' : '⚫'} {p.label}
+                    {activeProvider === p.id && <span className="active-tag">ACTIVE</span>}
+                  </span>
+                  <a href={p.keyUrl} target="_blank" rel="noreferrer noopener" className="get-key-link">
+                    Get key ↗
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  placeholder={`Enter your ${p.label} API key...`}
+                  value={keys[p.id]}
+                  onChange={(e) => handleKeyChange(p.id, e.target.value)}
+                  className="api-input"
+                />
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="modal-actions">
           <span className="save-status">{saveStatus}</span>
-          <button className="btn-save" onClick={handleSave}>Save Configuration</button>
+          <button className="btn-save" onClick={handleSave}>Save All Keys</button>
         </div>
       </div>
     </div>

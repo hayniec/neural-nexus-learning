@@ -13,7 +13,9 @@
 
 .modal-content {
   width: 90%;
-  max-width: 550px;
+  max-width: 620px;
+  max-height: 85vh;
+  overflow-y: auto;
   padding: 3rem;
   position: relative;
 }
@@ -41,6 +43,22 @@
   font-size: 0.95rem;
   line-height: 1.5;
   margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.configured-badge {
+  display: inline-block;
+  background: rgba(0, 200, 120, 0.15);
+  border: 1px solid rgba(0, 200, 120, 0.3);
+  color: #00c878;
+  padding: 0.2rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .form-group {
@@ -76,6 +94,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
+  position: relative;
 }
 
 .provider-name {
@@ -100,39 +119,111 @@
   box-shadow: 0 0 15px rgba(0, 136, 255, 0.3);
 }
 
-.api-input {
+.provider-btn.has-key {
+  border-color: rgba(0, 200, 120, 0.4);
+}
+
+.provider-btn.active.has-key {
+  border-color: var(--ai-glow);
+}
+
+.provider-key-dot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.55rem;
+  color: #00c878;
+  line-height: 1;
+}
+
+/* ── Key list ── */
+.provider-keys-section {
+  margin-bottom: 1rem;
+}
+
+.provider-keys-section > label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  color: var(--text-primary);
+}
+
+.provider-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.provider-key-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  transition: all 0.25s;
+}
+
+.provider-key-row.active-row {
+  background: rgba(0, 136, 255, 0.06);
+  border-color: rgba(0, 136, 255, 0.25);
+}
+
+.provider-key-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.provider-key-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.active-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--history-glow), var(--ai-glow));
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.get-key-link {
+  color: var(--science-glow);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.get-key-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.provider-key-row .api-input {
   width: 100%;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--glass-border);
   color: white;
-  padding: 1.2rem;
-  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.9rem;
   transition: all 0.3s;
 }
 
-.api-input:focus {
+.provider-key-row .api-input:focus {
   outline: none;
   border-color: var(--ai-glow);
   box-shadow: 0 0 15px rgba(0, 136, 255, 0.3);
-}
-
-.key-help {
-  margin-top: 0.8rem;
-  text-align: right;
-  font-size: 0.9rem;
-}
-
-.key-help a {
-  color: var(--science-glow);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.key-help a:hover {
-  color: #fff;
-  text-decoration: underline;
 }
 
 .modal-actions {

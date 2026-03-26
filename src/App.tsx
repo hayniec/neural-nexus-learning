@@ -141,7 +141,9 @@ function App() {
   };
 
   const handleGenerate = async () => {
-    if (!localStorage.getItem('ai_api_key')) {
+    const provider = localStorage.getItem('ai_provider') || 'gemini';
+    const hasKey = localStorage.getItem(`ai_key_${provider}`);
+    if (!hasKey) {
       setIsSettingsOpen(true);
       return;
     }
