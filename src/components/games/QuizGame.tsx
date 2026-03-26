@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import './QuizGame.css';
-import type { LevelData } from '../services/aiService';
+import type { QuizData } from '../../services/aiService';
 
 interface QuizGameProps {
-  levelData: LevelData;
+  levelData: QuizData;
   onBack: () => void;
 }
 

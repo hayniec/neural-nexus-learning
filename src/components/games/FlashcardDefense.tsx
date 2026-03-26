@@ -92,7 +92,7 @@ export default function FlashcardDefense({ levelData, onBack }: FlashcardDefense
       </div>
 
       <div className="node-progress">
-        {levelData.nodes.map((node, i) => (
+        {levelData.nodes.map((_, i) => (
           <div key={i} className={`node-indicator ${i < currentIndex ? 'completed' : ''} ${i === currentIndex ? 'active' : ''}`}></div>
         ))}
       </div>
