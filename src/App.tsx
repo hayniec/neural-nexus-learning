@@ -1,19 +1,73 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import './index.css';
 import QuizGame from './components/games/QuizGame';
 import SwipeGame from './components/games/SwipeGame';
 import FlashcardDefense from './components/games/FlashcardDefense';
 import NodeLinker from './components/games/NodeLinker';
 import SettingsModal from './components/SettingsModal';
+import AuthModal from './components/AuthModal';
 import { generateGame } from './services/aiService';
 import type { GameType, AnyGameData } from './services/aiService';
-
-// Fallback mockup removed as library is now functional.
+import { supabase } from './services/supabase';
+import { getOrCreateProfile, updateProfile, getSavedLevels, saveLevel } from './services/userService';
+import type { User } from '@supabase/supabase-js';
 
 function App() {
-  const [synapses, setSynapses] = useState(() => parseInt(localStorage.getItem('nn_synapses') || '3450'));
-  const [masteryCores, setMasteryCores] = useState(() => parseInt(localStorage.getItem('nn_cores') || '12'));
-  const [playerLevel, setPlayerLevel] = useState(() => parseInt(localStorage.getItem('nn_level') || '12'));
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [displayName, setDisplayName] = useState('Lifelong Learner');
+
+  const [synapses, setSynapses] = useState(() => parseInt(localStorage.getItem('nn_synapses') || '0'));
+  const [masteryCores, setMasteryCores] = useState(() => parseInt(localStorage.getItem('nn_cores') || '0'));
+  const [playerLevel, setPlayerLevel] = useState(() => parseInt(localStorage.getItem('nn_level') || '1'));
+
+  // Listen for auth state changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleUserLogin(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        handleUserLogin(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUserLogin = async (authUser: User) => {
+    setUser(authUser);
+    try {
+      const profile = await getOrCreateProfile(
+        authUser.id,
+        authUser.user_metadata?.display_name || 'Lifelong Learner'
+      );
+      setDisplayName(profile.display_name);
+      setSynapses(profile.synapses);
+      setMasteryCores(profile.mastery_cores);
+      setPlayerLevel(profile.player_level);
+
+      const levels = await getSavedLevels(authUser.id);
+      setSavedLevels(levels);
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setDisplayName('Lifelong Learner');
+    setSynapses(0);
+    setMasteryCores(0);
+    setPlayerLevel(1);
+    setSavedLevels([]);
+  };
 
   const [notes, setNotes] = useState('');
   const [pathway, setPathway] = useState('Science');
@@ -124,38 +178,48 @@ function App() {
     }
   });
 
-  const handleGameComplete = (earnedSynapses: number, maxScore: number) => {
-    // 1 Core for completing a level, bonus core if perfect score
+  const handleGameComplete = async (earnedSynapses: number, maxScore: number) => {
     const coresEarned = earnedSynapses === maxScore ? 2 : 1;
-    
-    setSynapses(prev => {
-      const newTotal = prev + earnedSynapses;
-      localStorage.setItem('nn_synapses', newTotal.toString());
-      
-      // Auto level up every 10,000 synapses
-      const newLevel = Math.max(playerLevel, Math.floor(newTotal / 10000) + 1);
-      if (newLevel > playerLevel) {
-        setPlayerLevel(newLevel);
-        localStorage.setItem('nn_level', newLevel.toString());
-      }
-      return newTotal;
-    });
 
-    setMasteryCores(prev => {
-      const newTotal = prev + coresEarned;
-      localStorage.setItem('nn_cores', newTotal.toString());
-      return newTotal;
-    });
+    const newSynapses = synapses + earnedSynapses;
+    const newCores = masteryCores + coresEarned;
+    const newLevel = Math.max(playerLevel, Math.floor(newSynapses / 10000) + 1);
 
-    // Auto-save generated levels to the library
+    setSynapses(newSynapses);
+    setMasteryCores(newCores);
+    setPlayerLevel(newLevel);
+
+    // Save to library
     if (activeLevel) {
       setSavedLevels(prev => {
-        // Prevent dupes
-        if (prev.find(l => JSON.stringify(l) === JSON.stringify(activeLevel))) return prev;
-        const newList = [activeLevel, ...prev];
-        localStorage.setItem('nn_library', JSON.stringify(newList));
-        return newList;
+        if (prev.find(l => l.title === activeLevel.title && l.type === activeLevel.type)) return prev;
+        return [activeLevel, ...prev];
       });
+    }
+
+    // Persist to Supabase if logged in, otherwise localStorage
+    if (user) {
+      try {
+        await updateProfile(user.id, {
+          synapses: newSynapses,
+          mastery_cores: newCores,
+          player_level: newLevel,
+        });
+        if (activeLevel) {
+          await saveLevel(user.id, activeLevel);
+        }
+      } catch (err) {
+        console.error('Failed to sync to cloud:', err);
+      }
+    } else {
+      localStorage.setItem('nn_synapses', newSynapses.toString());
+      localStorage.setItem('nn_cores', newCores.toString());
+      localStorage.setItem('nn_level', newLevel.toString());
+      if (activeLevel) {
+        const lib = JSON.parse(localStorage.getItem('nn_library') || '[]');
+        lib.unshift(activeLevel);
+        localStorage.setItem('nn_library', JSON.stringify(lib));
+      }
     }
 
     setIsPlaying(false);
@@ -179,6 +243,15 @@ function App() {
   return (
     <div className="app-container">
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      {isAuthOpen && (
+        <AuthModal
+          onClose={() => setIsAuthOpen(false)}
+          onAuth={(authUser) => {
+            handleUserLogin(authUser);
+            setIsAuthOpen(false);
+          }}
+        />
+      )}
       
       <header className="top-nav">
         <div className="user-profile">
@@ -186,7 +259,7 @@ function App() {
             <div className="avatar">🌌</div>
           </div>
           <div className="user-info">
-            <h1>Lifelong Learner</h1>
+            <h1>{displayName}</h1>
             <div className="user-title">Level {playerLevel} Scholar</div>
           </div>
         </div>
@@ -200,6 +273,15 @@ function App() {
           <button className="btn-settings" onClick={() => setIsSettingsOpen(true)} title="AI Settings">
             ⚙️
           </button>
+          {user ? (
+            <button className="btn-logout" onClick={handleLogout} title="Sign Out">
+              Logout
+            </button>
+          ) : (
+            <button className="btn-settings" onClick={() => setIsAuthOpen(true)} title="Sign In">
+              👤
+            </button>
+          )}
         </div>
       </header>
 
