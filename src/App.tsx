@@ -2,16 +2,68 @@ import { useState } from 'react';
 import './index.css';
 import QuizGame from './components/QuizGame';
 import SettingsModal from './components/SettingsModal';
+import { generateQuiz, LevelData } from './services/aiService';
+
+// Fallback mockup in case you click the old static planets
+const mockLevelData: LevelData = {
+  title: "Cellular Respiration - Level 1",
+  nodes: [
+    {
+      id: 1,
+      question: "What is the primary energy currency of the cell produced during respiration?",
+      options: ["Glucose", "ATP", "DNA", "Oxygen"],
+      correctAnswer: 1,
+      hint: "Think of a rechargeable battery that powers cellular work."
+    },
+    {
+      id: 2,
+      question: "Which organelle is known as the powerhouse of the cell?",
+      options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
+      correctAnswer: 2,
+      hint: "It has a double membrane and its own DNA."
+    }
+  ]
+};
 
 function App() {
   const [notes, setNotes] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeLevel, setActiveLevel] = useState<LevelData | null>(null);
 
-  if (isPlaying) {
+  const handleGenerate = async () => {
+    if (!localStorage.getItem('ai_api_key')) {
+      setIsSettingsOpen(true);
+      return;
+    }
+    
+    if (!notes.trim()) {
+      alert("Please paste some study notes first!");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const levelResult = await generateQuiz(notes);
+      setActiveLevel(levelResult);
+      setIsPlaying(true);
+    } catch (error: any) {
+      alert("Error generating your curriculum: " + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const playMockLevel = () => {
+    setActiveLevel(mockLevelData);
+    setIsPlaying(true);
+  };
+
+  if (isPlaying && activeLevel) {
     return (
       <div className="app-container">
-        <QuizGame onBack={() => setIsPlaying(false)} />
+        <QuizGame levelData={activeLevel} onBack={() => setIsPlaying(false)} />
       </div>
     );
   }
@@ -55,13 +107,13 @@ function App() {
             ></textarea>
             <div className="forge-actions">
               <button className="btn-upload">📎 Upload PDF/Doc</button>
-              <button className="btn-generate" onClick={() => {
-                if (!localStorage.getItem('ai_api_key')) {
-                  setIsSettingsOpen(true);
-                } else {
-                  alert("Game generation pipeline coming next!");
-                }
-              }}>Forge Learning Path 🚀</button>
+              <button 
+                className="btn-generate" 
+                onClick={handleGenerate}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "Forging Neurons... 🧠" : "Forge Learning Path 🚀"}
+              </button>
             </div>
           </div>
         </div>
@@ -69,25 +121,18 @@ function App() {
 
       <h3 className="section-title">Your Active Pathways</h3>
       <main className="map-container">
-        <div className="planet-card generated-path" onClick={() => setIsPlaying(true)}>
+        <div className="planet-card generated-path" onClick={playMockLevel}>
           <div className="planet-orb ai-glow"></div>
           <h2>Cellular Respiration</h2>
-          <p>Generated from: Bio 101 Notes</p>
+          <p>Example Pathway</p>
           <div className="progress-bar"><div className="progress" style={{width: '60%'}}></div></div>
         </div>
         
-        <div className="planet-card planet-history">
+        <div className="planet-card planet-history" onClick={playMockLevel}>
           <div className="planet-orb"></div>
           <h2>World War II</h2>
-          <p>Custom Pathway</p>
+          <p>Example Pathway</p>
           <div className="progress-bar"><div className="progress" style={{width: '20%'}}></div></div>
-        </div>
-        
-        <div className="planet-card planet-math">
-          <div className="planet-orb"></div>
-          <h2>Calculus Basics</h2>
-          <p>Core Curriculum</p>
-          <div className="progress-bar"><div className="progress" style={{width: '85%'}}></div></div>
         </div>
       </main>
     </div>

@@ -1,53 +1,40 @@
 import { useState } from 'react';
 import './QuizGame.css';
-
-// Mock AI generated data
-const mockLevelData = {
-  title: "Cellular Respiration - Level 1",
-  nodes: [
-    {
-      id: 1,
-      question: "What is the primary energy currency of the cell produced during respiration?",
-      options: ["Glucose", "ATP", "DNA", "Oxygen"],
-      correctAnswer: 1,
-      hint: "Think of a rechargeable battery that powers cellular work."
-    },
-    {
-      id: 2,
-      question: "Which organelle is known as the powerhouse of the cell?",
-      options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
-      correctAnswer: 2,
-      hint: "It has a double membrane and its own DNA."
-    },
-    {
-      id: 3,
-      question: "Glycolysis breaks down glucose into two molecules of what?",
-      options: ["Pyruvate", "Lactic Acid", "Carbon Dioxide", "Water"],
-      correctAnswer: 0,
-      hint: "A 3-carbon compound."
-    }
-  ]
-};
+import { LevelData } from '../services/aiService';
 
 interface QuizGameProps {
+  levelData: LevelData;
   onBack: () => void;
 }
 
-export default function QuizGame({ onBack }: QuizGameProps) {
+export default function QuizGame({ levelData, onBack }: QuizGameProps) {
   const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'incorrect'>('none');
   const [isFinished, setIsFinished] = useState(false);
 
-  const currentNode = mockLevelData.nodes[currentNodeIndex];
+  // Fallback in case there are no nodes
+  if (!levelData || !levelData.nodes || levelData.nodes.length === 0) {
+    return (
+      <div className="game-container">
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem' }}>
+          <h2>Whoops!</h2>
+          <p>The AI didn't generate any questions for that text.</p>
+          <button className="btn-primary" onClick={onBack} style={{ marginTop: '2rem' }}>Go Back</button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentNode = levelData.nodes[currentNodeIndex];
 
   const handleAnswer = (index: number) => {
     if (index === currentNode.correctAnswer) {
       setFeedback('correct');
       setScore(s => s + (showHint ? 50 : 100)); // Less points if hint used
       setTimeout(() => {
-        if (currentNodeIndex < mockLevelData.nodes.length - 1) {
+        if (currentNodeIndex < levelData.nodes.length - 1) {
           setCurrentNodeIndex(i => i + 1);
           setFeedback('none');
           setShowHint(false);
@@ -80,12 +67,12 @@ export default function QuizGame({ onBack }: QuizGameProps) {
     <div className="game-container">
       <div className="game-header">
         <button className="btn-back" onClick={onBack}>← Return to Hub</button>
-        <h2>{mockLevelData.title}</h2>
+        <h2>{levelData.title}</h2>
         <div className="score-display">⚡ {score}</div>
       </div>
 
       <div className="node-progress">
-        {mockLevelData.nodes.map((node, i) => (
+        {levelData.nodes.map((node, i) => (
           <div key={node.id} className={`node-indicator ${i < currentNodeIndex ? 'completed' : ''} ${i === currentNodeIndex ? 'active' : ''}`}></div>
         ))}
       </div>
