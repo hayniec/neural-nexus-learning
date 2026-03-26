@@ -44,12 +44,18 @@ export async function generateQuiz(notes: string): Promise<LevelData> {
 }
 
 async function generateWithGemini(notes: string, apiKey: string): Promise<LevelData> {
-  // We try a list of fallbacks in case one model is retired or not supported by the generated API Key.
-  const models = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-pro'];
+  // We try a list of fallbacks covering both v1 and v1beta API versions, starting with the newest 2.0 models
+  const endpoints = [
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`
+  ];
+
   let lastError;
 
-  for (const model of models) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  for (const endpoint of endpoints) {
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -66,7 +72,7 @@ async function generateWithGemini(notes: string, apiKey: string): Promise<LevelD
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error?.message || `Failed to generate with ${model}`);
+        throw new Error(err.error?.message || `API error for endpoint: ${endpoint}`);
       }
 
       const data = await response.json();
@@ -74,7 +80,7 @@ async function generateWithGemini(notes: string, apiKey: string): Promise<LevelD
       return JSON.parse(jsonText);
     } catch (e: any) {
       lastError = e;
-      console.warn(`Model ${model} failed, trying next fallback...`, e.message);
+      console.warn(`Endpoint failed, trying next fallback...`, e.message);
     }
   }
 
