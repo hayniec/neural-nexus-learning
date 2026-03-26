@@ -45,6 +45,7 @@ export default function AuthModal({ onClose, onAuth }: AuthModalProps) {
       email,
       password,
       options: {
+        emailRedirectTo: window.location.origin,
         data: { display_name: displayName || 'Lifelong Learner' }
       }
     });
@@ -53,8 +54,27 @@ export default function AuthModal({ onClose, onAuth }: AuthModalProps) {
     if (authError) {
       setError(authError.message);
     } else if (data.user) {
-      setSuccess('Account created! You can now start learning.');
+      setSuccess('Account created! Check your email to confirm if required.');
       setTimeout(() => onAuth(data.user!), 1500);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/`,
+    });
+    setLoading(false);
+
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      setSuccess('Password reset instructions sent to your email.');
     }
   };
 
@@ -123,7 +143,19 @@ export default function AuthModal({ onClose, onAuth }: AuthModalProps) {
           </div>
 
           <div className="form-group">
-            <label>Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label>Password</label>
+              {mode === 'login' && (
+                <button 
+                  type="button" 
+                  className="btn-forgot-password" 
+                  onClick={handleResetPassword}
+                  disabled={loading}
+                >
+                  Forgot Password?
+                </button>
+              )}
+            </div>
             <input
               type="password"
               placeholder="••••••••"

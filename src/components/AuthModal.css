@@ -131,3 +131,25 @@
 .btn-logout:hover {
   background: rgba(255, 51, 102, 0.3);
 }
+
+.btn-forgot-password {
+  background: transparent;
+  border: none;
+  color: var(--science-glow);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.btn-forgot-password:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+.btn-forgot-password:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
