@@ -44,29 +44,41 @@ export async function generateQuiz(notes: string): Promise<LevelData> {
 }
 
 async function generateWithGemini(notes: string, apiKey: string): Promise<LevelData> {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: `${SYSTEM_PROMPT}\n\nUSER NOTES:\n${notes}` }]
-      }],
-      generationConfig: {
-        responseMimeType: 'application/json'
-      }
-    })
-  });
+  // We try a list of fallbacks in case one model is retired or not supported by the generated API Key.
+  const models = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-pro'];
+  let lastError;
 
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || 'Failed to generate with Gemini API');
+  for (const model of models) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${SYSTEM_PROMPT}\n\nUSER NOTES:\n${notes}` }]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `Failed to generate with ${model}`);
+      }
+
+      const data = await response.json();
+      const jsonText = data.candidates[0].content.parts[0].text;
+      return JSON.parse(jsonText);
+    } catch (e: any) {
+      lastError = e;
+      console.warn(`Model ${model} failed, trying next fallback...`, e.message);
+    }
   }
 
-  const data = await response.json();
-  const jsonText = data.candidates[0].content.parts[0].text;
-  return JSON.parse(jsonText);
+  throw new Error(`Google API threw an error for all models. Last known error: ${lastError?.message || 'Unknown'}`);
 }
 
 async function generateWithOpenAI(notes: string, apiKey: string): Promise<LevelData> {
