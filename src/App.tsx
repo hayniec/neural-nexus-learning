@@ -2,7 +2,8 @@ import { useState } from 'react';
 import './index.css';
 import QuizGame from './components/QuizGame';
 import SettingsModal from './components/SettingsModal';
-import { generateQuiz, LevelData } from './services/aiService';
+import { generateQuiz } from './services/aiService';
+import type { LevelData } from './services/aiService';
 
 // Fallback mockup in case you click the old static planets
 const mockLevelData: LevelData = {

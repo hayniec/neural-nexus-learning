@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './QuizGame.css';
-import { LevelData } from '../services/aiService';
+import type { LevelData } from '../services/aiService';
 
 interface QuizGameProps {
   levelData: LevelData;
