@@ -624,6 +624,53 @@ button {
   text-align: center; font-weight: 800; font-size: 2.5rem; color: rgba(255,255,255,0.5);
 }
 
+/* Compact Library Cards */
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.library-card {
+  aspect-ratio: unset;
+  border-radius: 18px;
+  padding: 1.2rem;
+  min-height: auto;
+}
+
+.library-card .planet-orb {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.8rem;
+}
+
+.library-card h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+}
+
+.library-card p {
+  font-size: 0.75rem;
+}
+
+.library-card .pathway-chip {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  display: inline-block;
+  margin-top: 0.4rem;
+}
+
+.blank-path {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.blank-path .planet-orb {
+  background: #555;
+}
+
 /* Animations */
 @keyframes float {
   0% { transform: translateY(0px) rotate(0deg); }

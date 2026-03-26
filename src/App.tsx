@@ -331,26 +331,24 @@ function App() {
       </div>
 
       <h3 className="section-title">Your Saved Library</h3>
-      <main className="map-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+      <main className="library-grid">
         {savedLevels.map((level, i) => (
-          <div key={i} className="planet-card generated-path" onClick={() => {
+          <div key={i} className="planet-card library-card generated-path" onClick={() => {
             setActiveLevel(level);
             setIsPlaying(true);
           }}>
-            <div className="planet-orb ai-glow" style={{ background: 'var(--ai-glow)' }}></div>
-            <h2>{level.title.length > 20 ? level.title.substring(0, 20) + '...' : level.title}</h2>
-            <p className="pathway-chip" style={{ 
-              fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block', marginTop: '0.5rem'
-            }}>
+            <div className="planet-orb ai-glow"></div>
+            <h2>{level.title.length > 25 ? level.title.substring(0, 25) + '...' : level.title}</h2>
+            <p className="pathway-chip">
               {level.type.toUpperCase()}
             </p>
           </div>
         ))}
         {savedLevels.length === 0 && (
-           <div className="planet-card blank-path" style={{ opacity: 0.5, pointerEvents: 'none' }}>
-            <div className="planet-orb" style={{ background: '#555' }}></div>
+           <div className="planet-card library-card blank-path">
+            <div className="planet-orb"></div>
             <h2>Empty Library</h2>
-            <p>Generate & complete games to save them!</p>
+            <p>Complete games to save them here!</p>
           </div>
         )}
       </main>
