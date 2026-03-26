@@ -33,9 +33,18 @@ SPECIFIC SUBJECT FOCUS: ${subject || "General"}
 
 Output STRICTLY valid JSON ONLY without any markdown formatting blocks (do not wrap in \`\`\`json).\n`;
 
-  if (notes.trim()) {
-    basePrompt += `\nHere are the text notes:\n${notes}\n\n`;
+  const hasSourceMaterial = notes.trim() !== '' || hasImage;
+
+  if (hasSourceMaterial) {
+    basePrompt += `\nCRITICAL RESTRICTION: You MUST base the entire game EXCLUSIVELY on the provided notes and/or images below. Do not use outside knowledge. If the user's notes are brief, extract as much as possible but DO NOT invent facts not found in the source text/images.\n`;
+  } else {
+    basePrompt += `\nINSTRUCTION: You have not been provided specific notes. Please pull information from highly reliable, accurate educational sources to construct this curriculum. Ensure all facts are rigorously correct.\n`;
   }
+
+  if (notes.trim()) {
+    basePrompt += `\nHere are the text notes:\n"${notes}"\n\n`;
+  }
+  
   if (hasImage) {
     basePrompt += `\nPlease carefully transcribe, analyze, and extract facts from the provided image attachment to use as primary study material.\n\n`;
   }
