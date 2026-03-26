@@ -382,34 +382,40 @@ function App() {
               </div>
 
               <div className="game-mode-selector">
-                <label>Training Mode:</label>
-                <select title="Select Game Mode" value={gameMode} onChange={(e) => setGameMode(e.target.value as GameType)}>
-                  <option value="quiz">📝 Multiple Choice</option>
-                  <option value="swipe">👉 Swipe True / False</option>
-                  <option value="flashcard">⌨️ Flashcard Defense</option>
-                  <option value="linker">🔗 Node Linker</option>
-                </select>
+                <div className="mode-setting-group">
+                  <label>Training Mode:</label>
+                  <select title="Select Game Mode" value={gameMode} onChange={(e) => setGameMode(e.target.value as GameType)}>
+                    <option value="quiz">📝 Multiple Choice</option>
+                    <option value="swipe">👉 Swipe True / False</option>
+                    <option value="flashcard">⌨️ Flashcard Defense</option>
+                    <option value="linker">🔗 Node Linker</option>
+                  </select>
+                </div>
                 
-                <label className="count-input-label"># of Items:</label>
-                <input 
-                  type="number" 
-                  min="3" 
-                  max="30" 
-                  value={questionCount} 
-                  onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
-                  className="count-input"
-                  title="Number of questions or items"
-                />
+                <div className="mode-setting-group">
+                  <label># items:</label>
+                  <input 
+                    type="number" 
+                    min="3" 
+                    max="30" 
+                    value={questionCount} 
+                    onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+                    className="count-input"
+                    title="Number of questions or items"
+                  />
+                </div>
 
-                <label style={{ marginLeft: '1rem' }}>Mode:</label>
-                <select title="Test or Practice" value={isTestMode ? "test" : "practice"} onChange={e => setIsTestMode(e.target.value === "test")}>
-                  <option value="practice">Practice</option>
-                  <option value="test">Test Mode</option>
-                </select>
+                <div className="mode-setting-group">
+                  <label>Mode:</label>
+                  <select title="Test or Practice" value={isTestMode ? "test" : "practice"} onChange={e => setIsTestMode(e.target.value === "test")}>
+                    <option value="practice">Practice</option>
+                    <option value="test">Test Mode</option>
+                  </select>
+                </div>
 
                 {!isTestMode && (
-                  <>
-                    <label style={{ marginLeft: '0.5rem' }}>Chances:</label>
+                  <div className="mode-setting-group">
+                    <label>Chances:</label>
                     <select title="Max chances per question" value={maxAttempts} onChange={e => setMaxAttempts(parseInt(e.target.value))}>
                       <option value={0}>Infinite</option>
                       <option value={1}>1</option>
@@ -417,7 +423,7 @@ function App() {
                       <option value={3}>3</option>
                       <option value={5}>5</option>
                     </select>
-                  </>
+                  </div>
                 )}
               </div>
 

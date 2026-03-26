@@ -301,18 +301,31 @@ textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
 .game-mode-selector {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.8rem 1.2rem;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
 }
 
 .game-mode-selector label {
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+.mode-setting-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .game-mode-selector select {
