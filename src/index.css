@@ -264,6 +264,25 @@ textarea:focus {
   border-color: var(--ai-glow);
 }
 
+.attached-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.attached-file-badge {
+  background: rgba(0, 136, 255, 0.15);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .file-upload-wrapper {
   display: flex;
   align-items: center;

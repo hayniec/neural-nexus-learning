@@ -95,7 +95,12 @@ SCHEMA:
   return basePrompt;
 }
 
-export async function generateGame(notes: string, type: GameType, imageBase64?: string, imageMimeType?: string): Promise<AnyGameData> {
+export interface ImageDataPayload {
+  base64: string;
+  mimeType: string;
+}
+
+export async function generateGame(notes: string, type: GameType, images: ImageDataPayload[] = []): Promise<AnyGameData> {
   const provider = localStorage.getItem('ai_provider') || 'gemini';
   const apiKey = localStorage.getItem('ai_api_key');
 
@@ -103,17 +108,17 @@ export async function generateGame(notes: string, type: GameType, imageBase64?: 
     throw new Error('No API key found. Please save your key in settings.');
   }
 
-  const hasImage = !!imageBase64;
+  const hasImage = images.length > 0;
   const prompt = getPromptForType(type, notes, hasImage);
 
   if (provider === 'gemini') {
-    return generateWithGemini(prompt, apiKey, imageBase64, imageMimeType);
+    return generateWithGemini(prompt, apiKey, images);
   } else {
-    return generateWithOpenAI(prompt, apiKey, imageBase64, imageMimeType);
+    return generateWithOpenAI(prompt, apiKey, images);
   }
 }
 
-async function generateWithGemini(prompt: string, apiKey: string, imageBase64?: string, imageMimeType?: string): Promise<AnyGameData> {
+async function generateWithGemini(prompt: string, apiKey: string, images: ImageDataPayload[]): Promise<AnyGameData> {
   const endpoints = [
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -124,11 +129,12 @@ async function generateWithGemini(prompt: string, apiKey: string, imageBase64?: 
 
   let lastError;
   const parts: any[] = [{ text: prompt }];
-  if (imageBase64 && imageMimeType) {
+  
+  for (const img of images) {
     parts.push({
       inline_data: {
-        mime_type: imageMimeType,
-        data: imageBase64
+        mime_type: img.mimeType,
+        data: img.base64
       }
     });
   }
@@ -163,16 +169,16 @@ async function generateWithGemini(prompt: string, apiKey: string, imageBase64?: 
   throw new Error(`Google API threw an error for all models. Last known error: ${lastError?.message || 'Unknown'}`);
 }
 
-async function generateWithOpenAI(prompt: string, apiKey: string, imageBase64?: string, imageMimeType?: string): Promise<AnyGameData> {
+async function generateWithOpenAI(prompt: string, apiKey: string, images: ImageDataPayload[]): Promise<AnyGameData> {
   const endpoint = 'https://api.openai.com/v1/chat/completions';
   
   const content: any[] = [{ type: 'text', text: prompt }];
 
-  if (imageBase64 && imageMimeType) {
+  for (const img of images) {
     content.push({
       type: 'image_url',
       image_url: {
-        url: `data:${imageMimeType};base64,${imageBase64}`
+        url: `data:${img.mimeType};base64,${img.base64}`
       }
     });
   }

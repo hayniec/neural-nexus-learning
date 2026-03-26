@@ -26,7 +26,7 @@ const mockLevelData: AnyGameData = {
 
 function App() {
   const [notes, setNotes] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [gameMode, setGameMode] = useState<GameType>('quiz');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -52,22 +52,21 @@ function App() {
       return;
     }
     
-    if (!notes.trim() && !imageFile) {
+    if (!notes.trim() && imageFiles.length === 0) {
       alert("Please paste some study notes or upload an image first!");
       return;
     }
 
     setIsGenerating(true);
     try {
-      let base64 = undefined;
-      let mimeType = undefined;
-      
-      if (imageFile) {
-        base64 = await readFileAsBase64(imageFile);
-        mimeType = imageFile.type;
-      }
+      const imageDataPayloads = await Promise.all(
+        imageFiles.map(async (file) => ({
+          base64: await readFileAsBase64(file),
+          mimeType: file.type
+        }))
+      );
 
-      const levelResult = await generateGame(notes, gameMode, base64, mimeType);
+      const levelResult = await generateGame(notes, gameMode, imageDataPayloads);
       setActiveLevel(levelResult);
       setIsPlaying(true);
     } catch (error: any) {
@@ -80,6 +79,10 @@ function App() {
   const playMockLevel = () => {
     setActiveLevel(mockLevelData);
     setIsPlaying(true);
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   if (isPlaying && activeLevel) {
@@ -123,28 +126,41 @@ function App() {
       <div className="forge-section">
         <div className="forge-content">
           <h2>The Knowledge Forge</h2>
-          <p>Paste your notes or <strong>upload an image</strong> (handwritten notes, textbook pages), select your game mode, and the AI will forge a custom learning path.</p>
+          <p>Paste your notes or <strong>upload images</strong> (handwritten notes, textbook pages), select your game mode, and the AI will forge a custom learning path.</p>
           <div className="upload-area">
             <textarea 
               placeholder="Paste your study materials here (e.g., Biology Chapter 4 summary, College Calculus equations, or Python basics)..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             ></textarea>
+
+            {imageFiles.length > 0 && (
+              <div className="attached-files">
+                {imageFiles.map((file, i) => (
+                  <div key={i} className="attached-file-badge">
+                    📎 {file.name} 
+                    <button className="btn-remove-file" onClick={() => removeImage(i)}>✖</button>
+                  </div>
+                ))}
+              </div>
+            )}
             
             <div className="forge-toolbar">
               <div className="file-upload-wrapper">
                 <label className="file-upload-label">
-                  <span className="icon">📎</span> {imageFile ? imageFile.name : "Attach Image"}
+                  <span className="icon">📎</span> Add Images
                   <input 
                     type="file" 
                     accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setImageFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                      }
+                    }}
                     style={{ display: 'none' }}
                   />
                 </label>
-                {imageFile && (
-                  <button className="btn-remove-file" onClick={() => setImageFile(null)}>✖</button>
-                )}
               </div>
 
               <div className="game-mode-selector">
