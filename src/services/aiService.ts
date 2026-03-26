@@ -16,7 +16,7 @@ export interface LinkerData extends BaseLevelData { nodes: LinkerNode[]; }
 
 export type AnyGameData = QuizData | SwipeData | FlashcardData | LinkerData;
 
-function getPromptForType(type: GameType, notes: string, hasImage: boolean): string {
+function getPromptForType(type: GameType, notes: string, hasImage: boolean, count: number): string {
   let basePrompt = `You are an expert curriculum designer and gamification engine.
 Your task is to take the user's provided study notes (and/or uploaded images from handwritten notes, textbooks, or diagrams) and generate an interactive game level.
 Output STRICTLY valid JSON ONLY without any markdown formatting blocks (do not wrap in \`\`\`json).\n`;
@@ -29,7 +29,7 @@ Output STRICTLY valid JSON ONLY without any markdown formatting blocks (do not w
   }
 
   if (type === 'quiz') {
-    return basePrompt + `Generate exactly 5 multiple choice questions.
+    return basePrompt + `Generate exactly ${count} multiple choice questions.
 SCHEMA:
 {
   "title": "A short title based on material",
@@ -47,7 +47,7 @@ SCHEMA:
   }
 
   if (type === 'swipe') {
-    return basePrompt + `Generate exactly 10 True/False statements based on the material. Half true, half false.
+    return basePrompt + `Generate exactly ${count} True/False statements based on the material. Half true, half false.
 SCHEMA:
 {
   "title": "A short title based on material",
@@ -63,7 +63,7 @@ SCHEMA:
   }
 
   if (type === 'flashcard') {
-    return basePrompt + `Generate exactly 5 short-answer flashcard terminology questions. The 'answer' should be exactly 1 to 3 words max so the user can easily type it.
+    return basePrompt + `Generate exactly ${count} short-answer flashcard terminology questions. The 'answer' should be exactly 1 to 3 words max so the user can easily type it.
 SCHEMA:
 {
   "title": "A short title based on material",
@@ -78,7 +78,7 @@ SCHEMA:
   }
 
   if (type === 'linker') {
-    return basePrompt + `Generate exactly 5 term-to-definition matching pairs from the material.
+    return basePrompt + `Generate exactly ${count} term-to-definition matching pairs from the material.
 SCHEMA:
 {
   "title": "A short title based on material",
@@ -100,7 +100,7 @@ export interface ImageDataPayload {
   mimeType: string;
 }
 
-export async function generateGame(notes: string, type: GameType, images: ImageDataPayload[] = []): Promise<AnyGameData> {
+export async function generateGame(notes: string, type: GameType, images: ImageDataPayload[] = [], questionCount: number = 5): Promise<AnyGameData> {
   const provider = localStorage.getItem('ai_provider') || 'gemini';
   const apiKey = localStorage.getItem('ai_api_key');
 
@@ -109,7 +109,7 @@ export async function generateGame(notes: string, type: GameType, images: ImageD
   }
 
   const hasImage = images.length > 0;
-  const prompt = getPromptForType(type, notes, hasImage);
+  const prompt = getPromptForType(type, notes, hasImage, questionCount);
 
   if (provider === 'gemini') {
     return generateWithGemini(prompt, apiKey, images);

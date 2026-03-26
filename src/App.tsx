@@ -28,6 +28,7 @@ function App() {
   const [notes, setNotes] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [gameMode, setGameMode] = useState<GameType>('quiz');
+  const [questionCount, setQuestionCount] = useState(5);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,7 +67,7 @@ function App() {
         }))
       );
 
-      const levelResult = await generateGame(notes, gameMode, imageDataPayloads);
+      const levelResult = await generateGame(notes, gameMode, imageDataPayloads, questionCount);
       setActiveLevel(levelResult);
       setIsPlaying(true);
     } catch (error: any) {
@@ -171,6 +172,17 @@ function App() {
                   <option value="flashcard">⌨️ Flashcard Defense</option>
                   <option value="linker">🔗 Node Linker</option>
                 </select>
+                
+                <label className="count-input-label"># of Items:</label>
+                <input 
+                  type="number" 
+                  min="3" 
+                  max="30" 
+                  value={questionCount} 
+                  onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
+                  className="count-input"
+                  title="Number of questions or items"
+                />
               </div>
 
               <div className="forge-actions">

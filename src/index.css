@@ -328,6 +328,30 @@ textarea:focus {
   background: rgba(255, 51, 102, 0.3);
 }
 
+.count-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  width: 80px;
+  transition: all 0.2s;
+}
+
+.count-input:focus {
+  border-color: var(--ai-glow);
+  box-shadow: 0 0 10px rgba(0, 136, 255, 0.2);
+}
+
+.count-input-label {
+  margin-left: 0.5rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 button {
   padding: 0.8rem 1.5rem;
   border-radius: 12px;
