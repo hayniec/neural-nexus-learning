@@ -26,6 +26,9 @@ const mockLevelData: AnyGameData = {
 
 function App() {
   const [notes, setNotes] = useState('');
+  const [pathway, setPathway] = useState('Science');
+  const [subject, setSubject] = useState('');
+  const [level, setLevel] = useState('High School');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [gameMode, setGameMode] = useState<GameType>('quiz');
   const [questionCount, setQuestionCount] = useState(5);
@@ -39,7 +42,6 @@ function App() {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        // Strip the data:image/jpeg;base64, prefix to get raw string
         resolve(result.split(',')[1]);
       };
       reader.onerror = reject;
@@ -53,8 +55,8 @@ function App() {
       return;
     }
     
-    if (!notes.trim() && imageFiles.length === 0) {
-      alert("Please paste some study notes or upload an image first!");
+    if (!subject.trim() && !notes.trim() && imageFiles.length === 0) {
+      alert("Please either enter a Subject, paste study notes, or upload an image!");
       return;
     }
 
@@ -67,7 +69,7 @@ function App() {
         }))
       );
 
-      const levelResult = await generateGame(notes, gameMode, imageDataPayloads, questionCount);
+      const levelResult = await generateGame(notes, gameMode, imageDataPayloads, questionCount, pathway, subject, level);
       setActiveLevel(levelResult);
       setIsPlaying(true);
     } catch (error: any) {
@@ -127,10 +129,50 @@ function App() {
       <div className="forge-section">
         <div className="forge-content">
           <h2>The Knowledge Forge</h2>
-          <p>Paste your notes or <strong>upload images</strong> (handwritten notes, textbook pages), select your game mode, and the AI will forge a custom learning path.</p>
+          <p>Define your curriculum pathway, or provide custom source material (notes, images) to let the AI build a custom learning experience.</p>
+          
+          <div className="curriculum-builder">
+            <div className="curriculum-row">
+              <div className="input-group">
+                <label>Pathway</label>
+                <select title="Curriculum Pathway" value={pathway} onChange={e => setPathway(e.target.value)}>
+                  <option value="Science">Science</option>
+                  <option value="History">History</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Language Arts">Language Arts</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="Custom">Custom / General</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>Subject</label>
+                <input 
+                  type="text" 
+                  className="subject-input"
+                  title="Subject Focus"
+                  placeholder="e.g. Cellular Respiration, WW2" 
+                  value={subject} 
+                  onChange={e => setSubject(e.target.value)} 
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Difficulty Level</label>
+                <select title="Difficulty Level" value={level} onChange={e => setLevel(e.target.value)}>
+                  <option value="Elementary School">Elementary</option>
+                  <option value="Middle School">Middle School</option>
+                  <option value="High School">High School</option>
+                  <option value="College / University">College</option>
+                  <option value="Expert / Professional">Expert</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div className="upload-area">
             <textarea 
-              placeholder="Paste your study materials here (e.g., Biology Chapter 4 summary, College Calculus equations, or Python basics)..."
+              placeholder="[Optional] Paste highly specific study notes, facts, or instructions here if you want to strictly control the content..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             ></textarea>

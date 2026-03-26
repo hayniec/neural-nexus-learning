@@ -289,6 +289,52 @@ textarea:focus {
   gap: 0.5rem;
 }
 
+.curriculum-builder {
+  margin-bottom: 1.5rem;
+}
+
+.curriculum-row {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.input-group label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.input-group select, .subject-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-group select:focus, .subject-input:focus {
+  border-color: var(--ai-glow);
+  box-shadow: 0 0 10px rgba(0, 136, 255, 0.2);
+}
+
+.input-group select option {
+  background: #1a1a2e;
+  color: white;
+}
+
 .file-upload-label {
   display: flex;
   align-items: center;

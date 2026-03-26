@@ -16,9 +16,21 @@ export interface LinkerData extends BaseLevelData { nodes: LinkerNode[]; }
 
 export type AnyGameData = QuizData | SwipeData | FlashcardData | LinkerData;
 
-function getPromptForType(type: GameType, notes: string, hasImage: boolean, count: number): string {
+function getPromptForType(
+  type: GameType, 
+  notes: string, 
+  hasImage: boolean, 
+  count: number,
+  pathway: string,
+  subject: string,
+  level: string
+): string {
   let basePrompt = `You are an expert curriculum designer and gamification engine.
-Your task is to take the user's provided study notes (and/or uploaded images from handwritten notes, textbooks, or diagrams) and generate an interactive game level.
+Your task is to generate an interactive learning game.
+TARGET AUDIENCE LEVEL: ${level}
+CURRICULUM PATHWAY: ${pathway}
+SPECIFIC SUBJECT FOCUS: ${subject || "General"}
+
 Output STRICTLY valid JSON ONLY without any markdown formatting blocks (do not wrap in \`\`\`json).\n`;
 
   if (notes.trim()) {
@@ -100,7 +112,15 @@ export interface ImageDataPayload {
   mimeType: string;
 }
 
-export async function generateGame(notes: string, type: GameType, images: ImageDataPayload[] = [], questionCount: number = 5): Promise<AnyGameData> {
+export async function generateGame(
+  notes: string, 
+  type: GameType, 
+  images: ImageDataPayload[] = [], 
+  questionCount: number = 5,
+  pathway: string = 'Science',
+  subject: string = '',
+  level: string = 'High School'
+): Promise<AnyGameData> {
   const provider = localStorage.getItem('ai_provider') || 'gemini';
   const apiKey = localStorage.getItem('ai_api_key');
 
@@ -109,7 +129,7 @@ export async function generateGame(notes: string, type: GameType, images: ImageD
   }
 
   const hasImage = images.length > 0;
-  const prompt = getPromptForType(type, notes, hasImage, questionCount);
+  const prompt = getPromptForType(type, notes, hasImage, questionCount, pathway, subject, level);
 
   if (provider === 'gemini') {
     return generateWithGemini(prompt, apiKey, images);
