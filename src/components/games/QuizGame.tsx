@@ -5,9 +5,10 @@ import type { QuizData } from '../../services/aiService';
 interface QuizGameProps {
   levelData: QuizData;
   onBack: () => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-export default function QuizGame({ levelData, onBack }: QuizGameProps) {
+export default function QuizGame({ levelData, onBack, onComplete }: QuizGameProps) {
   const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -28,6 +29,7 @@ export default function QuizGame({ levelData, onBack }: QuizGameProps) {
   }
 
   const currentNode = levelData.nodes[currentNodeIndex];
+  const maxScore = levelData.nodes.length * 100;
 
   const handleAnswer = (index: number) => {
     if (index === currentNode.correctAnswer) {
@@ -55,9 +57,14 @@ export default function QuizGame({ levelData, onBack }: QuizGameProps) {
       <div className="game-container">
         <div className="victory-screen glass-panel">
           <h2>Pathway Completed! 🚀</h2>
-          <div className="final-score">Synapses Forged: {score}</div>
+          <div className="final-score">Synapses Forged: {score} / {maxScore}</div>
           <p>You have mastered these knowledge nodes.</p>
-          <button className="btn-primary" onClick={onBack}>Return to Dashboard</button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+            {onComplete && (
+              <button className="btn-primary" onClick={() => onComplete(score, maxScore)}>Claim Rewards 💎</button>
+            )}
+            <button className="btn-secondary" onClick={onBack}>Exit without Saving</button>
+          </div>
         </div>
       </div>
     );

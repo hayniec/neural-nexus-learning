@@ -5,14 +5,15 @@ import type { SwipeData } from '../../services/aiService';
 interface SwipeGameProps {
   levelData: SwipeData;
   onBack: () => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-export default function SwipeGame({ levelData, onBack }: SwipeGameProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export default function SwipeGame({ levelData, onBack, onComplete }: SwipeGameProps) {
+  const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'incorrect'>('none');
-  const [showExplanation, setShowExplanation] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   // Fallback
   if (!levelData || !levelData.nodes || levelData.nodes.length === 0) {
@@ -27,41 +28,45 @@ export default function SwipeGame({ levelData, onBack }: SwipeGameProps) {
     );
   }
 
-  const currentNode = levelData.nodes[currentIndex];
+  const currentNode = levelData.nodes[currentNodeIndex];
+  const maxScore = levelData.nodes.length * 100;
 
-  const handleSwipe = (guessedTrue: boolean) => {
-    if (feedback !== 'none') return; // Prevent double clicks
-
-    const isCorrect = guessedTrue === currentNode.isTrue;
+  const handleSwipe = (guess: boolean) => {
+    if (swipeDirection !== null) return;
     
-    if (isCorrect) {
+    setSwipeDirection(guess ? 'right' : 'left');
+
+    if (guess === currentNode.isTrue) {
       setFeedback('correct');
       setScore(s => s + 100);
-      setTimeout(() => nextCard(), 1000);
     } else {
       setFeedback('incorrect');
-      setShowExplanation(true);
     }
-  };
 
-  const nextCard = () => {
-    setFeedback('none');
-    setShowExplanation(false);
-    if (currentIndex < levelData.nodes.length - 1) {
-      setCurrentIndex(i => i + 1);
-    } else {
-      setIsFinished(true);
-    }
+    setTimeout(() => {
+      if (currentNodeIndex < levelData.nodes.length - 1) {
+        setCurrentNodeIndex(i => i + 1);
+        setFeedback('none');
+        setSwipeDirection(null);
+      } else {
+        setIsFinished(true);
+      }
+    }, 1200);
   };
 
   if (isFinished) {
     return (
       <div className="game-container">
         <div className="victory-screen glass-panel">
-          <h2>Pathway Completed! 🚀</h2>
-          <div className="final-score">Synapses Forged: {score}</div>
-          <p>You have classified all statements successfully.</p>
-          <button className="btn-primary" onClick={onBack}>Return to Dashboard</button>
+          <h2>Swipe Challenge Complete! ⚡</h2>
+          <div className="final-score">Synapses Forged: {score} / {maxScore}</div>
+          <p>Excellent pattern recognition.</p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+            {onComplete && (
+              <button className="btn-primary" onClick={() => onComplete(score, maxScore)}>Claim Rewards 💎</button>
+            )}
+            <button className="btn-secondary" onClick={onBack}>Exit without Saving</button>
+          </div>
         </div>
       </div>
     );
@@ -76,32 +81,43 @@ export default function SwipeGame({ levelData, onBack }: SwipeGameProps) {
       </div>
 
       <div className="node-progress">
-        {levelData.nodes.map((_, i) => (
-          <div key={i} className={`node-indicator ${i < currentIndex ? 'completed' : ''} ${i === currentIndex ? 'active' : ''}`}></div>
+        {levelData.nodes.map((node, i) => (
+          <div key={i} className={`node-indicator ${i < currentNodeIndex ? 'completed' : ''} ${i === currentNodeIndex ? 'active' : ''}`}></div>
         ))}
       </div>
 
-      <div className={`swipe-card glass-panel ${feedback}`}>
-        <h3 className="statement-text">"{currentNode.statement}"</h3>
-        
-        {showExplanation && (
-          <div className="explanation-box">
-            <h4>Incorrect!</h4>
-            <p>{currentNode.explanation}</p>
-            <button className="btn-continue" onClick={nextCard}>Got it, next →</button>
-          </div>
-        )}
+      <div className="swipe-area">
+        <div className={`swipe-card glass-panel ${swipeDirection ? `swiping-${swipeDirection}` : ''}`}>
+          <h3 className="statement-text">{currentNode.statement}</h3>
+          
+          {feedback !== 'none' && (
+            <div className={`feedback-overlay ${feedback}`}>
+              {feedback === 'correct' ? '✅ Correct' : '❌ Incorrect'}
+              {feedback === 'incorrect' && (
+                <div className="explanation">
+                  <strong>Fact Check:</strong> {currentNode.explanation}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        {feedback === 'none' && (
-          <div className="swipe-actions">
-            <button className="btn-swipe false" onClick={() => handleSwipe(false)}>
-              <span className="icon">✖</span> False
-            </button>
-            <button className="btn-swipe true" onClick={() => handleSwipe(true)}>
-              <span className="icon">✔</span> True
-            </button>
-          </div>
-        )}
+        <div className="swipe-controls">
+          <button 
+            className="btn-swipe left" 
+            onClick={() => handleSwipe(false)}
+            disabled={feedback !== 'none'}
+          >
+            ❌ FALSE Match
+          </button>
+          <button 
+            className="btn-swipe right" 
+            onClick={() => handleSwipe(true)}
+            disabled={feedback !== 'none'}
+          >
+            TRUE Match ✅
+          </button>
+        </div>
       </div>
     </div>
   );

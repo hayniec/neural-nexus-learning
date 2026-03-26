@@ -8,23 +8,13 @@ import SettingsModal from './components/SettingsModal';
 import { generateGame } from './services/aiService';
 import type { GameType, AnyGameData } from './services/aiService';
 
-// Fallback mockup
-// ... (I'll just inject at the exact line I need)
-const mockLevelData: AnyGameData = {
-  title: "Cellular Respiration - Level 1",
-  type: "quiz",
-  nodes: [
-    {
-      id: 1,
-      question: "What is the primary energy currency of the cell produced during respiration?",
-      options: ["Glucose", "ATP", "DNA", "Oxygen"],
-      correctAnswer: 1,
-      hint: "Think of a rechargeable battery that powers cellular work."
-    }
-  ]
-};
+// Fallback mockup removed as library is now functional.
 
 function App() {
+  const [synapses, setSynapses] = useState(() => parseInt(localStorage.getItem('nn_synapses') || '3450'));
+  const [masteryCores, setMasteryCores] = useState(() => parseInt(localStorage.getItem('nn_cores') || '12'));
+  const [playerLevel, setPlayerLevel] = useState(() => parseInt(localStorage.getItem('nn_level') || '12'));
+
   const [notes, setNotes] = useState('');
   const [pathway, setPathway] = useState('Science');
   const [subject, setSubject] = useState('');
@@ -79,9 +69,49 @@ function App() {
     }
   };
 
-  const playMockLevel = () => {
-    setActiveLevel(mockLevelData);
-    setIsPlaying(true);
+  const [savedLevels, setSavedLevels] = useState<AnyGameData[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('nn_library') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleGameComplete = (earnedSynapses: number, maxScore: number) => {
+    // 1 Core for completing a level, bonus core if perfect score
+    const coresEarned = earnedSynapses === maxScore ? 2 : 1;
+    
+    setSynapses(prev => {
+      const newTotal = prev + earnedSynapses;
+      localStorage.setItem('nn_synapses', newTotal.toString());
+      
+      // Auto level up every 10,000 synapses
+      const newLevel = Math.max(playerLevel, Math.floor(newTotal / 10000) + 1);
+      if (newLevel > playerLevel) {
+        setPlayerLevel(newLevel);
+        localStorage.setItem('nn_level', newLevel.toString());
+      }
+      return newTotal;
+    });
+
+    setMasteryCores(prev => {
+      const newTotal = prev + coresEarned;
+      localStorage.setItem('nn_cores', newTotal.toString());
+      return newTotal;
+    });
+
+    // Auto-save generated levels to the library
+    if (activeLevel) {
+      setSavedLevels(prev => {
+        // Prevent dupes
+        if (prev.find(l => JSON.stringify(l) === JSON.stringify(activeLevel))) return prev;
+        const newList = [activeLevel, ...prev];
+        localStorage.setItem('nn_library', JSON.stringify(newList));
+        return newList;
+      });
+    }
+
+    setIsPlaying(false);
   };
 
   const removeImage = (index: number) => {
@@ -91,10 +121,10 @@ function App() {
   if (isPlaying && activeLevel) {
     return (
       <div className="app-container">
-        {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
-        {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
-        {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
-        {activeLevel.type === 'linker' && <NodeLinker levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
+        {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
+        {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
+        {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
+        {activeLevel.type === 'linker' && <NodeLinker levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
       </div>
     );
   }
@@ -110,15 +140,15 @@ function App() {
           </div>
           <div className="user-info">
             <h1>Lifelong Learner</h1>
-            <div className="user-title">Level 12 Scholar</div>
+            <div className="user-title">Level {playerLevel} Scholar</div>
           </div>
         </div>
         <div className="resources">
           <div className="resource-badge" title="Synapses">
-            <span className="star-icon">⚡</span> 3,450
+            <span className="star-icon">⚡</span> {synapses.toLocaleString()}
           </div>
           <div className="resource-badge" title="Mastery Cores">
-            <span className="energy-icon">💎</span> 12
+            <span className="energy-icon">💎</span> {masteryCores.toLocaleString()}
           </div>
           <button className="btn-settings" onClick={() => setIsSettingsOpen(true)} title="AI Settings">
             ⚙️
@@ -242,14 +272,29 @@ function App() {
         </div>
       </div>
 
-      <h3 className="section-title">Your Active Pathways</h3>
-      <main className="map-container">
-        <div className="planet-card generated-path" onClick={playMockLevel}>
-          <div className="planet-orb ai-glow"></div>
-          <h2>Cellular Respiration</h2>
-          <p>Example Pathway</p>
-          <div className="progress-bar"><div className="progress" style={{width: '60%'}}></div></div>
-        </div>
+      <h3 className="section-title">Your Saved Library</h3>
+      <main className="map-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        {savedLevels.map((level, i) => (
+          <div key={i} className="planet-card generated-path" onClick={() => {
+            setActiveLevel(level);
+            setIsPlaying(true);
+          }}>
+            <div className="planet-orb ai-glow" style={{ background: 'var(--ai-glow)' }}></div>
+            <h2>{level.title.length > 20 ? level.title.substring(0, 20) + '...' : level.title}</h2>
+            <p className="pathway-chip" style={{ 
+              fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block', marginTop: '0.5rem'
+            }}>
+              {level.type.toUpperCase()}
+            </p>
+          </div>
+        ))}
+        {savedLevels.length === 0 && (
+           <div className="planet-card blank-path" style={{ opacity: 0.5, pointerEvents: 'none' }}>
+            <div className="planet-orb" style={{ background: '#555' }}></div>
+            <h2>Empty Library</h2>
+            <p>Generate & complete games to save them!</p>
+          </div>
+        )}
       </main>
     </div>
   );

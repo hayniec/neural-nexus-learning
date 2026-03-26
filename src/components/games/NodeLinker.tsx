@@ -5,9 +5,10 @@ import type { LinkerData, LinkerNode } from '../../services/aiService';
 interface NodeLinkerProps {
   levelData: LinkerData;
   onBack: () => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-export default function NodeLinker({ levelData, onBack }: NodeLinkerProps) {
+export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinkerProps) {
   const [terms, setTerms] = useState<{ id: string; text: string; originalNode: LinkerNode }[]>([]);
   const [definitions, setDefinitions] = useState<{ id: string; text: string; originalNode: LinkerNode }[]>([]);
   
@@ -44,6 +45,8 @@ export default function NodeLinker({ levelData, onBack }: NodeLinkerProps) {
       </div>
     );
   }
+
+  const maxScore = levelData.nodes.length * 150;
 
   const handleSelectTerm = (id: string) => {
     if (matchedIds.has(id) || errorPair) return;
@@ -88,10 +91,15 @@ export default function NodeLinker({ levelData, onBack }: NodeLinkerProps) {
     return (
       <div className="game-container">
         <div className="victory-screen glass-panel">
-          <h2>Pathway Completed! 🚀</h2>
-          <div className="final-score">Synapses Forged: {score}</div>
+          <h2>Network Linked! 🔗</h2>
+          <div className="final-score">Synapses Forged: {score} / {maxScore}</div>
           <p>You have perfectly aligned all knowledge nodes.</p>
-          <button className="btn-primary" onClick={onBack}>Return to Dashboard</button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+            {onComplete && (
+              <button className="btn-primary" onClick={() => onComplete(score, maxScore)}>Claim Rewards 💎</button>
+            )}
+            <button className="btn-secondary" onClick={onBack}>Exit without Saving</button>
+          </div>
         </div>
       </div>
     );

@@ -5,9 +5,10 @@ import type { FlashcardData } from '../../services/aiService';
 interface FlashcardDefenseProps {
   levelData: FlashcardData;
   onBack: () => void;
+  onComplete?: (score: number, maxScore: number) => void;
 }
 
-export default function FlashcardDefense({ levelData, onBack }: FlashcardDefenseProps) {
+export default function FlashcardDefense({ levelData, onBack, onComplete }: FlashcardDefenseProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [score, setScore] = useState(0);
@@ -34,6 +35,7 @@ export default function FlashcardDefense({ levelData, onBack }: FlashcardDefense
   }
 
   const currentNode = levelData.nodes[currentIndex];
+  const maxScore = levelData.nodes.length * 200;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -74,10 +76,15 @@ export default function FlashcardDefense({ levelData, onBack }: FlashcardDefense
     return (
       <div className="game-container">
         <div className="victory-screen glass-panel">
-          <h2>Pathway Completed! 🚀</h2>
-          <div className="final-score">Synapses Forged: {score}</div>
+          <h2>Defense Successful! 🚀</h2>
+          <div className="final-score">Synapses Forged: {score} / {maxScore}</div>
           <p>Your mental reflexes are sharp.</p>
-          <button className="btn-primary" onClick={onBack}>Return to Dashboard</button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem' }}>
+            {onComplete && (
+              <button className="btn-primary" onClick={() => onComplete(score, maxScore)}>Claim Rewards 💎</button>
+            )}
+            <button className="btn-secondary" onClick={onBack}>Exit without Saving</button>
+          </div>
         </div>
       </div>
     );
