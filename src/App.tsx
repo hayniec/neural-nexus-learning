@@ -3,11 +3,13 @@ import './index.css';
 import QuizGame from './components/games/QuizGame';
 import SwipeGame from './components/games/SwipeGame';
 import FlashcardDefense from './components/games/FlashcardDefense';
+import NodeLinker from './components/games/NodeLinker';
 import SettingsModal from './components/SettingsModal';
 import { generateGame } from './services/aiService';
 import type { GameType, AnyGameData } from './services/aiService';
 
 // Fallback mockup
+// ... (I'll just inject at the exact line I need)
 const mockLevelData: AnyGameData = {
   title: "Cellular Respiration - Level 1",
   type: "quiz",
@@ -64,8 +66,7 @@ function App() {
         {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
         {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
         {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
-        {/* Placeholder for Linker */}
-        {activeLevel.type === 'linker' && <div className="game-container"><div className="glass-panel" style={{padding: '3rem'}}><h2>Node Linker</h2><p>Coming Soon!</p><button className="btn-primary" onClick={()=>setIsPlaying(false)}>Back</button></div></div>}
+        {activeLevel.type === 'linker' && <NodeLinker levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
       </div>
     );
   }
@@ -111,7 +112,7 @@ function App() {
             <div className="forge-toolbar">
               <div className="game-mode-selector">
                 <label>Select Training Mode:</label>
-                <select value={gameMode} onChange={(e) => setGameMode(e.target.value as GameType)}>
+                <select title="Select Game Mode" value={gameMode} onChange={(e) => setGameMode(e.target.value as GameType)}>
                   <option value="quiz">📝 Multiple Choice Quiz</option>
                   <option value="swipe">👉 Swipe True / False</option>
                   <option value="flashcard">⌨️ Flashcard Defense (Typing)</option>
