@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 import './SettingsModal.css';
 
+type Provider = 'gemini' | 'openai' | 'claude' | 'mistral' | 'groq';
+
+const PROVIDERS: { id: Provider; label: string; description: string; keyUrl: string }[] = [
+  { id: 'gemini', label: 'Google Gemini', description: 'Free tier available', keyUrl: 'https://aistudio.google.com/app/apikey' },
+  { id: 'openai', label: 'OpenAI (GPT)', description: 'GPT-4o-mini', keyUrl: 'https://platform.openai.com/api-keys' },
+  { id: 'claude', label: 'Anthropic Claude', description: 'Claude 3.5 Sonnet', keyUrl: 'https://console.anthropic.com/settings/keys' },
+  { id: 'mistral', label: 'Mistral AI', description: 'Mistral Large', keyUrl: 'https://console.mistral.ai/api-keys' },
+  { id: 'groq', label: 'Groq', description: 'Llama 3 · Ultra fast', keyUrl: 'https://console.groq.com/keys' },
+];
+
 interface SettingsModalProps {
   onClose: () => void;
 }
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const [provider, setProvider] = useState<'gemini' | 'openai'>('gemini');
+  const [provider, setProvider] = useState<Provider>('gemini');
   const [apiKey, setApiKey] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
 
   useEffect(() => {
-    const savedProvider = localStorage.getItem('ai_provider') as 'gemini' | 'openai' | null;
+    const savedProvider = localStorage.getItem('ai_provider') as Provider | null;
     const savedKey = localStorage.getItem('ai_api_key');
     if (savedProvider) setProvider(savedProvider);
     if (savedKey) setApiKey(savedKey);
@@ -27,48 +37,46 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }, 1500);
   };
 
+  const activeProvider = PROVIDERS.find(p => p.id === provider)!;
+
   return (
     <div className="modal-overlay">
       <div className="modal-content glass-panel">
         <button className="btn-close" onClick={onClose}>×</button>
         <h2>AI Provider Settings</h2>
         <p className="modal-desc">
-          To generate custom curriculums, you need to provide your own AI API key. This key is stored securely in your browser and never sent to our servers.
+          Choose your AI engine and paste your API key. Keys are stored locally in your browser and never leave your device.
         </p>
         
         <div className="form-group">
           <label>Select AI Provider</label>
           <div className="provider-options">
-            <button 
-              className={`provider-btn ${provider === 'gemini' ? 'active' : ''}`}
-              onClick={() => setProvider('gemini')}
-            >
-              Google Gemini (Free Tier)
-            </button>
-            <button 
-              className={`provider-btn ${provider === 'openai' ? 'active' : ''}`}
-              onClick={() => setProvider('openai')}
-            >
-              OpenAI (ChatGPT)
-            </button>
+            {PROVIDERS.map(p => (
+              <button 
+                key={p.id}
+                className={`provider-btn ${provider === p.id ? 'active' : ''}`}
+                onClick={() => setProvider(p.id)}
+              >
+                <span className="provider-name">{p.label}</span>
+                <span className="provider-desc">{p.description}</span>
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="form-group">
-          <label>API Key</label>
+          <label>{activeProvider.label} API Key</label>
           <input 
             type="password" 
-            placeholder={`Enter your ${provider === 'gemini' ? 'Gemini' : 'OpenAI'} API Key...`}
+            placeholder={`Enter your ${activeProvider.label} API Key...`}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="api-input"
           />
           <div className="key-help">
-            {provider === 'gemini' ? (
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer noopener">Get a free Gemini API Key here ↗</a>
-            ) : (
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer noopener">Get an OpenAI API Key here ↗</a>
-            )}
+            <a href={activeProvider.keyUrl} target="_blank" rel="noreferrer noopener">
+              Get a {activeProvider.label} API Key here ↗
+            </a>
           </div>
         </div>
 

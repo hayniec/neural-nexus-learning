@@ -142,8 +142,16 @@ export async function generateGame(
 
   if (provider === 'gemini') {
     return generateWithGemini(prompt, apiKey, images);
-  } else {
+  } else if (provider === 'openai') {
     return generateWithOpenAI(prompt, apiKey, images);
+  } else if (provider === 'claude') {
+    return generateWithClaude(prompt, apiKey, images);
+  } else if (provider === 'mistral') {
+    return generateWithMistral(prompt, apiKey);
+  } else if (provider === 'groq') {
+    return generateWithGroq(prompt, apiKey);
+  } else {
+    return generateWithGemini(prompt, apiKey, images);
   }
 }
 
@@ -230,6 +238,103 @@ async function generateWithOpenAI(prompt: string, apiKey: string, images: ImageD
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.error?.message || 'Failed to generate with OpenAI API');
+  }
+
+  const data = await response.json();
+  const jsonText = data.choices[0].message.content;
+  return JSON.parse(jsonText);
+}
+
+async function generateWithClaude(prompt: string, apiKey: string, images: ImageDataPayload[]): Promise<AnyGameData> {
+  const content: any[] = [];
+
+  for (const img of images) {
+    content.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: img.mimeType,
+        data: img.base64
+      }
+    });
+  }
+
+  content.push({ type: 'text', text: prompt });
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4096,
+      messages: [
+        { role: 'user', content }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || 'Failed to generate with Claude API');
+  }
+
+  const data = await response.json();
+  const jsonText = data.content[0].text;
+  // Claude may wrap in ```json ... ```, strip it
+  const cleaned = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
+async function generateWithMistral(prompt: string, apiKey: string): Promise<AnyGameData> {
+  const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'mistral-large-latest',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || 'Failed to generate with Mistral API');
+  }
+
+  const data = await response.json();
+  const jsonText = data.choices[0].message.content;
+  return JSON.parse(jsonText);
+}
+
+async function generateWithGroq(prompt: string, apiKey: string): Promise<AnyGameData> {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || 'Failed to generate with Groq API');
   }
 
   const data = await response.json();
