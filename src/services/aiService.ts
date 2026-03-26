@@ -184,7 +184,7 @@ async function generateWithGemini(prompt: string, apiKey: string, images: ImageD
         body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: {
-            responseMimeType: 'application/json'
+            response_mime_type: 'application/json'
           }
         })
       });
