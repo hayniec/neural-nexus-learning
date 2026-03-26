@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import './index.css';
-import QuizGame from './components/QuizGame';
+import QuizGame from './components/games/QuizGame';
+import SwipeGame from './components/games/SwipeGame';
+import FlashcardDefense from './components/games/FlashcardDefense';
 import SettingsModal from './components/SettingsModal';
-import { generateQuiz } from './services/aiService';
-import type { LevelData } from './services/aiService';
+import { generateGame } from './services/aiService';
+import type { GameType, AnyGameData } from './services/aiService';
 
-// Fallback mockup in case you click the old static planets
-const mockLevelData: LevelData = {
+// Fallback mockup
+const mockLevelData: AnyGameData = {
   title: "Cellular Respiration - Level 1",
+  type: "quiz",
   nodes: [
     {
       id: 1,
@@ -15,23 +18,17 @@ const mockLevelData: LevelData = {
       options: ["Glucose", "ATP", "DNA", "Oxygen"],
       correctAnswer: 1,
       hint: "Think of a rechargeable battery that powers cellular work."
-    },
-    {
-      id: 2,
-      question: "Which organelle is known as the powerhouse of the cell?",
-      options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
-      correctAnswer: 2,
-      hint: "It has a double membrane and its own DNA."
     }
   ]
 };
 
 function App() {
   const [notes, setNotes] = useState('');
+  const [gameMode, setGameMode] = useState<GameType>('quiz');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeLevel, setActiveLevel] = useState<LevelData | null>(null);
+  const [activeLevel, setActiveLevel] = useState<AnyGameData | null>(null);
 
   const handleGenerate = async () => {
     if (!localStorage.getItem('ai_api_key')) {
@@ -46,7 +43,7 @@ function App() {
 
     setIsGenerating(true);
     try {
-      const levelResult = await generateQuiz(notes);
+      const levelResult = await generateGame(notes, gameMode);
       setActiveLevel(levelResult);
       setIsPlaying(true);
     } catch (error: any) {
@@ -64,7 +61,11 @@ function App() {
   if (isPlaying && activeLevel) {
     return (
       <div className="app-container">
-        <QuizGame levelData={activeLevel} onBack={() => setIsPlaying(false)} />
+        {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
+        {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
+        {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} />}
+        {/* Placeholder for Linker */}
+        {activeLevel.type === 'linker' && <div className="game-container"><div className="glass-panel" style={{padding: '3rem'}}><h2>Node Linker</h2><p>Coming Soon!</p><button className="btn-primary" onClick={()=>setIsPlaying(false)}>Back</button></div></div>}
       </div>
     );
   }
@@ -99,23 +100,36 @@ function App() {
       <div className="forge-section">
         <div className="forge-content">
           <h2>The Knowledge Forge</h2>
-          <p>Paste your notes, textbook chapters, or syllabus. Our AI will forge a custom gamified learning path for you.</p>
+          <p>Paste your notes, select your game mode, and the AI will forge a custom learning path.</p>
           <div className="upload-area">
             <textarea 
               placeholder="Paste your study materials here (e.g., Biology Chapter 4 summary, College Calculus equations, or Python basics)..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             ></textarea>
-            <div className="forge-actions">
-              <button className="btn-upload">📎 Upload PDF/Doc</button>
-              <button 
-                className="btn-generate" 
-                onClick={handleGenerate}
-                disabled={isGenerating}
-              >
-                {isGenerating ? "Forging Neurons... 🧠" : "Forge Learning Path 🚀"}
-              </button>
+            
+            <div className="forge-toolbar">
+              <div className="game-mode-selector">
+                <label>Select Training Mode:</label>
+                <select value={gameMode} onChange={(e) => setGameMode(e.target.value as GameType)}>
+                  <option value="quiz">📝 Multiple Choice Quiz</option>
+                  <option value="swipe">👉 Swipe True / False</option>
+                  <option value="flashcard">⌨️ Flashcard Defense (Typing)</option>
+                  <option value="linker">🔗 Node Linker (Coming soon)</option>
+                </select>
+              </div>
+
+              <div className="forge-actions">
+                <button 
+                  className="btn-generate" 
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Forging Neurons... 🧠" : "Forge Learning Path 🚀"}
+                </button>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -127,13 +141,6 @@ function App() {
           <h2>Cellular Respiration</h2>
           <p>Example Pathway</p>
           <div className="progress-bar"><div className="progress" style={{width: '60%'}}></div></div>
-        </div>
-        
-        <div className="planet-card planet-history" onClick={playMockLevel}>
-          <div className="planet-orb"></div>
-          <h2>World War II</h2>
-          <p>Example Pathway</p>
-          <div className="progress-bar"><div className="progress" style={{width: '20%'}}></div></div>
         </div>
       </main>
     </div>

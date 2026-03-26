@@ -1,34 +1,95 @@
-export interface QuizNode {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  hint: string;
-}
+export type GameType = 'quiz' | 'swipe' | 'flashcard' | 'linker';
 
-export interface LevelData {
-  title: string;
-  nodes: QuizNode[];
-}
+export interface BaseLevelData { title: string; type: GameType; }
 
-const SYSTEM_PROMPT = `You are an expert curriculum designer and gamification engine.
-Your task is to take the user's raw study notes and generate an interactive multiple-choice quiz level.
-Output STRICTLY valid JSON ONLY in the following format. Ensure that there are no markdown formatting blocks around the JSON (e.g. do not output \`\`\`json...):
+export interface QuizNode { id: number; question: string; options: string[]; correctAnswer: number; hint: string; }
+export interface QuizData extends BaseLevelData { nodes: QuizNode[]; }
+
+export interface SwipeNode { statement: string; isTrue: boolean; explanation: string; }
+export interface SwipeData extends BaseLevelData { nodes: SwipeNode[]; }
+
+export interface FlashcardNode { question: string; answer: string; }
+export interface FlashcardData extends BaseLevelData { nodes: FlashcardNode[]; }
+
+export interface LinkerNode { term: string; definition: string; }
+export interface LinkerData extends BaseLevelData { nodes: LinkerNode[]; }
+
+export type AnyGameData = QuizData | SwipeData | FlashcardData | LinkerData;
+
+function getPromptForType(type: GameType, notes: string): string {
+  const basePrompt = `You are an expert curriculum designer and gamification engine.
+Your task is to take the user's raw study notes and generate an interactive game level.
+Output STRICTLY valid JSON ONLY without any markdown formatting blocks (do not wrap in \`\`\`json).
+Here are the USER NOTES:\n${notes}\n\n`;
+
+  if (type === 'quiz') {
+    return basePrompt + `Generate exactly 5 multiple choice questions.
+SCHEMA:
 {
-  "title": "A short, engaging title based on the notes (e.g. Cellular Respiration - Level 1)",
+  "title": "A short title",
+  "type": "quiz",
   "nodes": [
     {
       "id": 1,
       "question": "A clear multiple-choice question testing a key concept.",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": 0,
-      "hint": "A strategic hint that helps the student think without giving the direct answer."
+      "hint": "A strategic hint"
     }
   ]
-}
-Generate exactly 4 to 5 questions based on the provided notes. Make sure the correct answer index is accurate (0 for the first option, 1 for the second, etc).`;
+}`;
+  }
 
-export async function generateQuiz(notes: string): Promise<LevelData> {
+  if (type === 'swipe') {
+    return basePrompt + `Generate exactly 10 True/False statements based on the notes. Half true, half false.
+SCHEMA:
+{
+  "title": "A short title",
+  "type": "swipe",
+  "nodes": [
+    {
+      "statement": "Mitochondria is the powerhouse of the cell.",
+      "isTrue": true,
+      "explanation": "Because it generates most of the cell's supply of ATP."
+    }
+  ]
+}`;
+  }
+
+  if (type === 'flashcard') {
+    return basePrompt + `Generate exactly 5 short-answer flashcard terminology questions. The 'answer' should be exactly 1 to 3 words max so the user can easily type it.
+SCHEMA:
+{
+  "title": "A short title",
+  "type": "flashcard",
+  "nodes": [
+    {
+      "question": "The primary energy currency of the cell.",
+      "answer": "ATP"
+    }
+  ]
+}`;
+  }
+
+  if (type === 'linker') {
+    return basePrompt + `Generate exactly 5 term-to-definition matching pairs from the notes.
+SCHEMA:
+{
+  "title": "A short title",
+  "type": "linker",
+  "nodes": [
+    {
+      "term": "Chloroplast",
+      "definition": "Organelle responsible for photosynthesis in plant cells."
+    }
+  ]
+}`;
+  }
+
+  return basePrompt;
+}
+
+export async function generateGame(notes: string, type: GameType): Promise<AnyGameData> {
   const provider = localStorage.getItem('ai_provider') || 'gemini';
   const apiKey = localStorage.getItem('ai_api_key');
 
@@ -36,15 +97,16 @@ export async function generateQuiz(notes: string): Promise<LevelData> {
     throw new Error('No API key found. Please save your key in settings.');
   }
 
+  const prompt = getPromptForType(type, notes);
+
   if (provider === 'gemini') {
-    return generateWithGemini(notes, apiKey);
+    return generateWithGemini(prompt, apiKey);
   } else {
-    return generateWithOpenAI(notes, apiKey);
+    return generateWithOpenAI(prompt, apiKey);
   }
 }
 
-async function generateWithGemini(notes: string, apiKey: string): Promise<LevelData> {
-  // We try a list of fallbacks covering both v1 and v1beta API versions, starting with the newest 2.0 models
+async function generateWithGemini(prompt: string, apiKey: string): Promise<AnyGameData> {
   const endpoints = [
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -61,12 +123,8 @@ async function generateWithGemini(notes: string, apiKey: string): Promise<LevelD
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `${SYSTEM_PROMPT}\n\nUSER NOTES:\n${notes}` }]
-          }],
-          generationConfig: {
-            responseMimeType: 'application/json'
-          }
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json' }
         })
       });
 
@@ -87,7 +145,7 @@ async function generateWithGemini(notes: string, apiKey: string): Promise<LevelD
   throw new Error(`Google API threw an error for all models. Last known error: ${lastError?.message || 'Unknown'}`);
 }
 
-async function generateWithOpenAI(notes: string, apiKey: string): Promise<LevelData> {
+async function generateWithOpenAI(prompt: string, apiKey: string): Promise<AnyGameData> {
   const endpoint = 'https://api.openai.com/v1/chat/completions';
   
   const response = await fetch(endpoint, {
@@ -99,8 +157,7 @@ async function generateWithOpenAI(notes: string, apiKey: string): Promise<LevelD
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `USER NOTES:\n${notes}` }
+        { role: 'user', content: prompt }
       ],
       response_format: { type: 'json_object' }
     })
