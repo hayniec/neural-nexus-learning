@@ -116,7 +116,7 @@ function App() {
                   <option value="quiz">📝 Multiple Choice Quiz</option>
                   <option value="swipe">👉 Swipe True / False</option>
                   <option value="flashcard">⌨️ Flashcard Defense (Typing)</option>
-                  <option value="linker">🔗 Node Linker (Coming soon)</option>
+                  <option value="linker">🔗 Node Linker</option>
                 </select>
               </div>
 
