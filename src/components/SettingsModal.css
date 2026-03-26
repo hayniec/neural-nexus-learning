@@ -1,0 +1,151 @@
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(13, 15, 28, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 550px;
+  padding: 3rem;
+  position: relative;
+}
+
+.btn-close {
+  position: absolute;
+  top: 1.5rem; right: 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.btn-close:hover {
+  color: var(--math-glow);
+}
+
+.modal-desc {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-top: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 2rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  color: var(--text-primary);
+}
+
+.provider-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.provider-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.provider-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.provider-btn.active {
+  background: rgba(0, 136, 255, 0.2);
+  border-color: var(--ai-glow);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(0, 136, 255, 0.3);
+}
+
+.api-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 1.2rem;
+  border-radius: 12px;
+  font-family: monospace;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.api-input:focus {
+  outline: none;
+  border-color: var(--ai-glow);
+  box-shadow: 0 0 15px rgba(0, 136, 255, 0.3);
+}
+
+.key-help {
+  margin-top: 0.8rem;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.key-help a {
+  color: var(--science-glow);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.key-help a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.save-status {
+  color: var(--science-glow);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, var(--history-glow), var(--ai-glow));
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(0, 136, 255, 0.3);
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 136, 255, 0.5);
+}

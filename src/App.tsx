@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import './index.css';
 import QuizGame from './components/QuizGame';
+import SettingsModal from './components/SettingsModal';
 
 function App() {
   const [notes, setNotes] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   if (isPlaying) {
     return (
@@ -16,6 +18,8 @@ function App() {
 
   return (
     <div className="app-container">
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+      
       <header className="top-nav">
         <div className="user-profile">
           <div className="avatar-ring">
@@ -33,6 +37,9 @@ function App() {
           <div className="resource-badge" title="Mastery Cores">
             <span className="energy-icon">💎</span> 12
           </div>
+          <button className="btn-settings" onClick={() => setIsSettingsOpen(true)} title="AI Settings">
+            ⚙️
+          </button>
         </div>
       </header>
 
@@ -48,7 +55,13 @@ function App() {
             ></textarea>
             <div className="forge-actions">
               <button className="btn-upload">📎 Upload PDF/Doc</button>
-              <button className="btn-generate">Forge Learning Path 🚀</button>
+              <button className="btn-generate" onClick={() => {
+                if (!localStorage.getItem('ai_api_key')) {
+                  setIsSettingsOpen(true);
+                } else {
+                  alert("Game generation pipeline coming next!");
+                }
+              }}>Forge Learning Path 🚀</button>
             </div>
           </div>
         </div>
