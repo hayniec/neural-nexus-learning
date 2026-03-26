@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import './NodeLinker.css';
 import type { LinkerData, LinkerNode } from '../../services/aiService';
 
+import type { GameOptions } from './QuizGame';
+
 interface NodeLinkerProps {
   levelData: LinkerData;
   onBack: () => void;
   onComplete?: (score: number, maxScore: number) => void;
+  gameOptions?: GameOptions;
 }
 
-export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinkerProps) {
+export default function NodeLinker({ levelData, onBack, onComplete, gameOptions }: NodeLinkerProps) {
   const [terms, setTerms] = useState<{ id: string; text: string; originalNode: LinkerNode }[]>([]);
   const [definitions, setDefinitions] = useState<{ id: string; text: string; originalNode: LinkerNode }[]>([]);
   
@@ -19,6 +22,9 @@ export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinker
   const [errorPair, setErrorPair] = useState<{ termId: string; defId: string } | null>(null);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  
+  const [attemptsMap, setAttemptsMap] = useState<Record<string, number>>({});
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   // Initialize and shuffle the lists on load
   useEffect(() => {
@@ -49,12 +55,12 @@ export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinker
   const maxScore = levelData.nodes.length * 150;
 
   const handleSelectTerm = (id: string) => {
-    if (matchedIds.has(id) || errorPair) return;
+    if (matchedIds.has(id) || failedIds.has(id) || errorPair) return;
     setSelectedTermId(id === selectedTermId ? null : id);
   };
 
   const handleSelectDef = (id: string) => {
-    if (matchedIds.has(id) || errorPair) return;
+    if (matchedIds.has(id) || failedIds.has(id) || errorPair) return;
     setSelectedDefId(id === selectedDefId ? null : id);
   };
 
@@ -67,25 +73,42 @@ export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinker
       if (termNode && defNode && termNode.originalNode === defNode.originalNode) {
         // Match successful!
         setMatchedIds(prev => new Set(prev).add(selectedTermId).add(selectedDefId));
-        setScore(s => s + 150);
+        const attempts = (attemptsMap[selectedTermId] || 0) + 1;
+        if (attempts === 1) {
+          setScore(s => s + 150);
+        } else {
+          setScore(s => s + 50); // Less points if retried
+        }
         setSelectedTermId(null);
         setSelectedDefId(null);
 
         // Check win condition
-        if (matchedIds.size + 2 === terms.length * 2) {
+        if (matchedIds.size + failedIds.size + 2 >= terms.length * 2) {
           setTimeout(() => setIsFinished(true), 1000);
         }
       } else {
         // Match failed
+        const isTest = gameOptions?.isTestMode || false;
+        const maxTries = gameOptions?.maxAttempts || 0;
+        const termAttempts = (attemptsMap[selectedTermId] || 0) + 1;
+        setAttemptsMap(prev => ({ ...prev, [selectedTermId]: termAttempts }));
+
         setErrorPair({ termId: selectedTermId, defId: selectedDefId });
+
         setTimeout(() => {
+          if (isTest || (maxTries > 0 && termAttempts >= maxTries)) {
+            setFailedIds(prev => new Set(prev).add(selectedTermId).add(selectedDefId));
+            if (matchedIds.size + failedIds.size + 2 >= terms.length * 2) {
+              setIsFinished(true);
+            }
+          }
           setErrorPair(null);
           setSelectedTermId(null);
           setSelectedDefId(null);
         }, 800);
       }
     }
-  }, [selectedTermId, selectedDefId, terms, definitions, matchedIds.size]);
+  }, [selectedTermId, selectedDefId, terms, definitions, matchedIds.size, failedIds.size, attemptsMap, gameOptions]);
 
   if (isFinished) {
     return (
@@ -124,14 +147,15 @@ export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinker
             {terms.map(t => {
               const isSelected = selectedTermId === t.id;
               const isMatched = matchedIds.has(t.id);
+              const isFailed = failedIds.has(t.id);
               const isError = errorPair?.termId === t.id;
 
               return (
                 <button
                   key={t.id}
-                  className={`linker-item ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${isError ? 'error' : ''}`}
+                  className={`linker-item ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${isFailed ? 'failed' : ''} ${isError ? 'error' : ''}`}
                   onClick={() => handleSelectTerm(t.id)}
-                  disabled={isMatched}
+                  disabled={isMatched || isFailed}
                 >
                   {t.text}
                 </button>
@@ -147,14 +171,15 @@ export default function NodeLinker({ levelData, onBack, onComplete }: NodeLinker
             {definitions.map(d => {
               const isSelected = selectedDefId === d.id;
               const isMatched = matchedIds.has(d.id);
+              const isFailed = failedIds.has(d.id);
               const isError = errorPair?.defId === d.id;
 
               return (
                 <button
                   key={d.id}
-                  className={`linker-item ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${isError ? 'error' : ''}`}
+                  className={`linker-item ${isSelected ? 'selected' : ''} ${isMatched ? 'matched' : ''} ${isFailed ? 'failed' : ''} ${isError ? 'error' : ''}`}
                   onClick={() => handleSelectDef(d.id)}
-                  disabled={isMatched}
+                  disabled={isMatched || isFailed}
                 >
                   {d.text}
                 </button>

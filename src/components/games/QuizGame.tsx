@@ -2,18 +2,25 @@ import { useState } from 'react';
 import './QuizGame.css';
 import type { QuizData } from '../../services/aiService';
 
+export interface GameOptions {
+  isTestMode: boolean;
+  maxAttempts: number;
+}
+
 interface QuizGameProps {
   levelData: QuizData;
   onBack: () => void;
   onComplete?: (score: number, maxScore: number) => void;
+  gameOptions?: GameOptions;
 }
 
-export default function QuizGame({ levelData, onBack, onComplete }: QuizGameProps) {
+export default function QuizGame({ levelData, onBack, onComplete, gameOptions }: QuizGameProps) {
   const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState<'none' | 'correct' | 'incorrect'>('none');
   const [isFinished, setIsFinished] = useState(false);
+  const [attemptsTrack, setAttemptsTrack] = useState(0);
 
   // Fallback in case there are no nodes
   if (!levelData || !levelData.nodes || levelData.nodes.length === 0) {
@@ -32,23 +39,43 @@ export default function QuizGame({ levelData, onBack, onComplete }: QuizGameProp
   const maxScore = levelData.nodes.length * 100;
 
   const handleAnswer = (index: number) => {
+    const isTest = gameOptions?.isTestMode || false;
+    const maxTries = gameOptions?.maxAttempts || 0;
+    const currentAttempts = attemptsTrack + 1;
+    setAttemptsTrack(currentAttempts);
+
     if (index === currentNode.correctAnswer) {
       setFeedback('correct');
-      setScore(s => s + (showHint ? 50 : 100)); // Less points if hint used
+      if (currentAttempts === 1) {
+        setScore(s => s + (showHint ? 50 : 100)); // Less points if hint used
+      } else {
+        setScore(s => s + 25); // Minimal points for retries
+      }
       setTimeout(() => {
-        if (currentNodeIndex < levelData.nodes.length - 1) {
-          setCurrentNodeIndex(i => i + 1);
-          setFeedback('none');
-          setShowHint(false);
-        } else {
-          setIsFinished(true);
-        }
+        moveToNext();
       }, 1500);
     } else {
       setFeedback('incorrect');
-      setTimeout(() => {
-        setFeedback('none');
-      }, 1500);
+      if (isTest || (maxTries > 0 && currentAttempts >= maxTries)) {
+        setTimeout(() => {
+          moveToNext();
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          setFeedback('none');
+        }, 1500);
+      }
+    }
+  };
+
+  const moveToNext = () => {
+    setAttemptsTrack(0);
+    if (currentNodeIndex < levelData.nodes.length - 1) {
+      setCurrentNodeIndex(i => i + 1);
+      setFeedback('none');
+      setShowHint(false);
+    } else {
+      setIsFinished(true);
     }
   };
 
@@ -107,7 +134,7 @@ export default function QuizGame({ levelData, onBack, onComplete }: QuizGameProp
         </div>
 
         <div className="game-actions">
-          {!showHint && (
+          {!showHint && !gameOptions?.isTestMode && (
             <button className="btn-hint" onClick={() => setShowHint(true)}>
               Buy Strategic Hint (Costs 50 Insight)
             </button>

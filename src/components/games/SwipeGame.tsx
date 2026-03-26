@@ -2,10 +2,13 @@ import { useState } from 'react';
 import './SwipeGame.css';
 import type { SwipeData } from '../../services/aiService';
 
+import type { GameOptions } from './QuizGame';
+
 interface SwipeGameProps {
   levelData: SwipeData;
   onBack: () => void;
   onComplete?: (score: number, maxScore: number) => void;
+  gameOptions?: GameOptions;
 }
 
 export default function SwipeGame({ levelData, onBack, onComplete }: SwipeGameProps) {

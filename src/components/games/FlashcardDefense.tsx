@@ -2,18 +2,22 @@ import { useState, useEffect, useRef } from 'react';
 import './FlashcardDefense.css';
 import type { FlashcardData } from '../../services/aiService';
 
+import type { GameOptions } from './QuizGame';
+
 interface FlashcardDefenseProps {
   levelData: FlashcardData;
   onBack: () => void;
   onComplete?: (score: number, maxScore: number) => void;
+  gameOptions?: GameOptions;
 }
 
-export default function FlashcardDefense({ levelData, onBack, onComplete }: FlashcardDefenseProps) {
+export default function FlashcardDefense({ levelData, onBack, onComplete, gameOptions }: FlashcardDefenseProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<'none' | 'correct' | 'skipped'>('none');
+  const [feedback, setFeedback] = useState<'none' | 'correct' | 'skipped' | 'incorrect'>('none');
   const [isFinished, setIsFinished] = useState(false);
+  const [attemptsTrack, setAttemptsTrack] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,18 +42,53 @@ export default function FlashcardDefense({ levelData, onBack, onComplete }: Flas
   const maxScore = levelData.nodes.length * 200;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputValue(val);
+    setInputValue(e.target.value);
+    
+    // Only auto-submit perfect matches if infinite attempts & not test mode
+    if (!gameOptions?.isTestMode && (!gameOptions?.maxAttempts || gameOptions.maxAttempts === 0)) {
+      const cleanGuessed = e.target.value.trim().toLowerCase();
+      const cleanAnswer = currentNode.answer.trim().toLowerCase();
+      if (cleanGuessed === cleanAnswer) {
+        submitAnswer(cleanGuessed, cleanAnswer);
+      }
+    }
+  };
 
-    // Auto-check against answer (ignoring case and whitespace)
-    const cleanGuessed = val.trim().toLowerCase();
-    const cleanAnswer = currentNode.answer.trim().toLowerCase();
+  const submitAnswer = (guessed: string, answer: string) => {
+    const isTest = gameOptions?.isTestMode || false;
+    const maxTries = gameOptions?.maxAttempts || 0;
+    const currentAttempts = attemptsTrack + 1;
+    setAttemptsTrack(currentAttempts);
 
-    if (cleanGuessed === cleanAnswer) {
+    if (guessed === answer) {
       setFeedback('correct');
-      setScore(s => s + 200);
+      if (currentAttempts === 1) {
+        setScore(s => s + 200);
+      } else {
+        setScore(s => s + 50); // lower score for retries
+      }
       setInputValue('');
+      setAttemptsTrack(0);
       setTimeout(() => nextCard(), 800);
+    } else {
+      if (isTest || (maxTries > 0 && currentAttempts >= maxTries)) {
+        setFeedback('skipped');
+        setInputValue(currentNode.answer); // Reveal answer
+        setAttemptsTrack(0);
+        setTimeout(() => {
+          setInputValue('');
+          nextCard();
+        }, 1500);
+      } else {
+        setFeedback('incorrect');
+        setTimeout(() => setFeedback('none'), 800);
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && inputValue.trim() !== '') {
+      submitAnswer(inputValue.trim().toLowerCase(), currentNode.answer.trim().toLowerCase());
     }
   };
 
@@ -114,16 +153,17 @@ export default function FlashcardDefense({ levelData, onBack, onComplete }: Flas
           <input 
             type="text" 
             ref={inputRef}
-            className={`defense-input ${feedback === 'correct' ? 'success' : ''} ${feedback === 'skipped' ? 'failed' : ''}`}
+            className={`defense-input ${feedback === 'correct' ? 'success' : ''} ${feedback === 'skipped' ? 'failed' : ''} ${feedback === 'incorrect' ? 'wrong' : ''}`}
             value={inputValue}
             onChange={handleInputChange}
-            placeholder="Type your answer to intercept..."
-            disabled={feedback !== 'none'}
+            onKeyDown={handleKeyDown}
+            placeholder={(gameOptions?.isTestMode || (gameOptions?.maxAttempts || 0) > 0) ? "Type and press Enter..." : "Type your answer to intercept..."}
+            disabled={feedback !== 'none' && feedback !== 'incorrect'}
             autoFocus
             autoComplete="off"
           />
           
-          {feedback === 'none' && (
+          {feedback === 'none' && !gameOptions?.isTestMode && (
             <button className="btn-skip" onClick={skipCard}>Emergency Skip (Reveal Answer)</button>
           )}
         </div>

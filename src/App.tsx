@@ -80,6 +80,8 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeLevel, setActiveLevel] = useState<AnyGameData | null>(null);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [maxAttempts, setMaxAttempts] = useState(0); // 0 = infinite
   const [isRecording, setIsRecording] = useState(false);
   const speechRecRef = useRef<any>(null);
 
@@ -232,12 +234,13 @@ function App() {
   };
 
   if (isPlaying && activeLevel) {
+    const gameOpts = { isTestMode, maxAttempts };
     return (
       <div className="app-container">
-        {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
-        {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
-        {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
-        {activeLevel.type === 'linker' && <NodeLinker levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} />}
+        {activeLevel.type === 'quiz' && <QuizGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} gameOptions={gameOpts} />}
+        {activeLevel.type === 'swipe' && <SwipeGame levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} gameOptions={gameOpts} />}
+        {activeLevel.type === 'flashcard' && <FlashcardDefense levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} gameOptions={gameOpts} />}
+        {activeLevel.type === 'linker' && <NodeLinker levelData={activeLevel as any} onBack={() => setIsPlaying(false)} onComplete={handleGameComplete} gameOptions={gameOpts} />}
       </div>
     );
   }
@@ -397,6 +400,25 @@ function App() {
                   className="count-input"
                   title="Number of questions or items"
                 />
+
+                <label style={{ marginLeft: '1rem' }}>Mode:</label>
+                <select title="Test or Practice" value={isTestMode ? "test" : "practice"} onChange={e => setIsTestMode(e.target.value === "test")}>
+                  <option value="practice">Practice</option>
+                  <option value="test">Test Mode</option>
+                </select>
+
+                {!isTestMode && (
+                  <>
+                    <label style={{ marginLeft: '0.5rem' }}>Chances:</label>
+                    <select title="Max chances per question" value={maxAttempts} onChange={e => setMaxAttempts(parseInt(e.target.value))}>
+                      <option value={0}>Infinite</option>
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                      <option value={5}>5</option>
+                    </select>
+                  </>
+                )}
               </div>
 
               <div className="forge-actions">
@@ -419,6 +441,8 @@ function App() {
         {savedLevels.map((level, i) => (
           <div key={i} className="planet-card library-card generated-path" onClick={() => {
             setActiveLevel(level);
+            // Default to test mode options when starting a saved game?
+            // Actually, let's keep the user's current forge settings so they can choose whether to 'practice' or 'test' saved games.
             setIsPlaying(true);
           }}>
             <div className="planet-orb ai-glow"></div>
